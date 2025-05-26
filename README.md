@@ -92,8 +92,16 @@ VirtoLang is a Python-inspired language using curly braces `{}` for code blocks 
 
 **14. Imports**
 - Import other VirtoLang files from the current directory (filename without extension):
-  import mymodule
-  # This will run mymodule.vlang and make its functions/variables available
+  `import mymodule`
+  ### This will run mymodule.vlang and make its functions/variables available
+- Import packages with the package name:
+  `import mypackage`
+  ### This will run the package and make all its functions/variables available
+- Import other VirtoLang files from a custom directory (filename with/without extension):
+  `import "C:/path/to/virtolang/file"`
+  or
+  `import "C:/path/to/virtolang/file.vlang"`
+  ### This will run the file and make its functions/variables available
 
 **15. Async/Await/Run/Run_Async as Language Constructs**
 VirtoLang now supports Python-style async/await and file execution as first-class language features:
