@@ -19,6 +19,8 @@ def tokenize(code):
         ("NUMBER", r"\d+"),
         ("PRINT", r"print"),
         ("IF", r"if"),
+        ("ASYNC", r"async"),
+        ("AWAIT", r"await"),
         ("ELSE", r"else"),
         ("ELIF", r"elif"),
         ("WHILE", r"while"),
@@ -29,12 +31,9 @@ def tokenize(code):
         ("TRUE", r"true"),
         ("FALSE", r"false"),
         ("NULL", r"null"),
-        ("IN", r"in"),
         ("IMPORT", r"import"),
         ("WITH", r"with"),
         ("AS", r"as"),
-        ("ASYNC", r"async"),
-        ("AWAIT", r"await"),
         ("RUN", r"run"),
         ("RUN_ASYNC", r"run_async"),
         # Correct string literal regex for both single and double quotes
@@ -103,7 +102,6 @@ def tokenize(code):
                 "true",
                 "false",
                 "null",
-                "in",
                 "and",
                 "or",
                 "not",
@@ -339,7 +337,9 @@ class Parser:
         var = self.match("IDENTIFIER")
         if not var:
             raise SyntaxError("Expected variable name in for loop")
-        if not self.match("IN"):
+        # Check for 'in' as an identifier, not as a token type
+        in_token = self.match("IDENTIFIER")
+        if not in_token or in_token[1] != "in":
             raise SyntaxError("Expected 'in' in for loop")
         iterable = self.expression()
         if not self.match("RPAREN"):
