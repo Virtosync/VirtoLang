@@ -104,7 +104,7 @@ class InstallerApp:
                 # Running as script
                 resource_dir = os.path.dirname(os.path.abspath(__file__))
 
-            for fname in ["vlang.exe", "VirtoLang-Transparent.ico"]:
+            for fname in ["vlang.exe", "VirtoLang-Transparent.ico", "vpm.exe"]:
                 src = os.path.join(resource_dir, fname)
                 dst = os.path.join(install_dir, fname)
                 with open(src, "rb") as fsrc, open(dst, "wb") as fdst:

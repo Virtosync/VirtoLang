@@ -1,124 +1,209 @@
-VirtoLang Documentation
-=======================
+# VirtoLang Language Reference & User Guide
 
-VirtoLang is a Python-inspired language using curly braces `{}` for code blocks (instead of colons/indentation) and supports many familiar constructs. Below are the features and syntax you can use:
+VirtoLang is a Python-inspired, modern scripting language with curly-brace blocks, dynamic typing, and a focus on readability and power. This document covers all major features, syntax, and error handling in VirtoLang.
 
 ---
 
-**1. Variables**
-- Declare with `var`:
-  var x = 5
-  var name = 'VirtoLang'
+## Table of Contents
 
-**2. Printing**
-- Use `print()`:
-  print('Hello, world!')
-  print(x)
+- [1. Variables](#1-variables)
+- [2. Data Types](#2-data-types)
+- [3. Printing](#3-printing)
+- [4. Arithmetic & Comparison](#4-arithmetic--comparison)
+- [5. Boolean Logic](#5-boolean-logic)
+- [6. Strings](#6-strings)
+- [7. Lists](#7-lists)
+- [8. Dictionaries](#8-dictionaries)
+- [9. Functions](#9-functions)
+- [10. Control Flow](#10-control-flow)
+- [11. Loops](#11-loops)
+- [12. Exception Handling](#12-exception-handling)
+- [13. Imports & Packages](#13-imports--packages)
+- [14. Async & Await](#14-async--await)
+- [15. Built-in Functions](#15-built-in-functions)
+- [16. Error Messages & Debugging](#16-error-messages--debugging)
+- [17. Example Programs](#17-example-programs)
 
-**3. Functions**
-- Define with `def` and call with parentheses:
-  def greet(name) {
-    print('Hello, ' + name)
-  }
-  greet('Zack')
+---
 
-**4. Return Statements**
-- Functions can return values:
-  def add(a, b) {
+## 1. Variables
+
+Declare variables with `var`:
+
+```vlang
+var x = 5
+var name = "VirtoLang"
+```
+
+## 2. Data Types
+
+- Numbers: `var n = 42`
+- Strings: `var s = 'hello'` or `var t = "world"`
+- Booleans: `true`, `false`
+- Null: `null`
+- Lists: `var nums = [1, 2, 3]`
+- Dictionaries: `var d = dict()`
+
+## 3. Printing
+
+Use `print()` to output values:
+
+```vlang
+print("Hello, world!")
+print(x)
+```
+
+## 4. Arithmetic & Comparison
+
+Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`:
+
+```vlang
+var y = 6
+print(y / 2)  # prints 3.0
+if (y >= 3 and y < 10) {
+    print("In range")
+}
+```
+
+## 5. Boolean Logic
+
+Use `and`, `or`, `not`, and boolean literals:
+
+```vlang
+if (true and not false) {
+    print("Booleans work!")
+}
+```
+
+Supports Python-style logical operators:
+
+- `not in`, `is not`, `in`, `is`
+
+## 6. Strings
+
+Single or double quotes, supports escape sequences:
+
+```vlang
+var s = 'hello\nworld'
+var t = "She said, \"hi!\""
+```
+
+## 7. Lists
+
+List literals with brackets:
+
+```vlang
+var nums = [1, 2, 3, 4]
+```
+
+## 8. Dictionaries
+
+Create and use dictionaries:
+
+```vlang
+var d = dict()
+dict_set(d, "key", 123)
+print(dict_get(d, "key"))
+```
+
+## 9. Functions
+
+Define and call functions:
+
+```vlang
+def greet(name) {
+    print("Hello, " + name)
+}
+greet("Zack")
+
+def add(a, b) {
     return a + b
-  }
-  var result = add(2, 3)
-  print(result)
+}
+print(add(2, 3))
+```
 
-**5. If / Elif / Else**
-- Use parentheses for conditions and curly braces for blocks:
-  if (x > 0) {
-    print('Positive')
-  } elif (x == 0) {
-    print('Zero')
-  } else {
-    print('Negative')
-  }
+Supports async functions:
 
-**6. While Loops**
-- Standard while loop:
-  var i = 0
-  while (i < 5) {
+```vlang
+async def foo(x) {
+    print(x)
+}
+```
+
+## 10. Control Flow
+
+### If / Elif / Else
+
+```vlang
+if (x > 0) {
+    print("Positive")
+} elif (x == 0) {
+    print("Zero")
+} else {
+    print("Negative")
+}
+```
+
+## 11. Loops
+
+### While Loops
+
+```vlang
+var i = 0
+while (i < 5) {
     print(i)
     var i = i + 1
-  }
-
-**7. For Loops**
-- For-each over lists:
-  var items = [1, 2, 3]
-  for (item in items) {
-    print(item)
-  }
-
-**8. Lists**
-- List literals with brackets:
-  var nums = [1, 2, 3, 4]
-
-**9. Arithmetic & Comparison**
-- +, -, *, / (integer division), ==, !=, <, >, <=, >=:
-  var y = 6
-  print(y / 2)  # prints 3
-  if (y >= 3 and y < 10) {
-    print('In range')
-  }
-
-**10. Boolean Logic**
-- Use `and`, `or`, `not`, and boolean literals:
-  if (true and not false) {
-    print('Booleans work!')
-  }
-
-**11. Strings**
-- Single or double quotes:
-  var s = 'hello'
-  var t = "world"
-  print(s + ' ' + t)
-
-**12. Comments**
-- Single line: # This is a comment
-- Block: /* This is a block comment */
-
-**13. Function Calls**
-- Call user-defined functions:
-  def add(a, b) {
-    return a + b
-  }
-  print(add(2, 3))
-
-**14. Imports**
-- Import other VirtoLang files from the current directory (filename without extension):
-  `import mymodule`
-  ### This will run mymodule.vlang and make its functions/variables available
-- Import packages with the package name:
-  `import mypackage`
-  ### This will run the package and make all its functions/variables available
-- Import other VirtoLang files from a custom directory (filename with/without extension):
-  `import "C:/path/to/virtolang/file"`
-  or
-  `import "C:/path/to/virtolang/file.vlang"`
-  ### This will run the file and make its functions/variables available
-
-**15. Async/Await/Run/Run_Async as Language Constructs**
-VirtoLang now supports Python-style async/await and file execution as first-class language features:
-
-- `async def foo(x) { ... }` defines an async function.
-- `await <expr>` can be used as a statement or expression to await a task or async function.
-- `run <filename>` runs another .vlang file synchronously as a statement.
-- `run_async <filename>` runs another .vlang file asynchronously as a statement, returning a task/future.
-
-### Examples
-
+}
 ```
+
+### For Loops
+
+For-each over lists:
+
+```vlang
+var items = [1, 2, 3]
+for (item in items) {
+    print(item)
+}
+```
+
+## 12. Exception Handling
+
+VirtoLang supports Python-style exception handling:
+
+```vlang
+try {
+    raise Error("Something went wrong!")
+} except Error as e {
+    print("Caught error:", e)
+} finally {
+    print("Cleanup!")
+}
+```
+
+- Use `raise` to throw errors.
+- Use `try`/`except`/`finally` for error handling.
+- Use `as` to bind the exception to a variable.
+- The built-in `Error` class can be used or subclassed.
+
+## 13. Imports & Packages
+
+Import other VirtoLang files or packages:
+
+```vlang
+import mymodule      # Imports mymodule.vlang
+import "C:/path/to/file"  # Imports file.vlang from a path
+```
+
+## 14. Async & Await
+
+VirtoLang supports async/await and running files:
+
+```vlang
 async def async_hello(name) {
     print("Hello, " + name)
     return 42
 }
-
 task = async_hello("Virto")
 result = await task
 print(result)
@@ -128,47 +213,72 @@ task2 = run_async "test2.vlang"
 await task2
 ```
 
-You can mix async/await with other language features, and use them in both top-level code and inside functions.
+## 15. Built-in Functions
 
-See the rest of this document for more details on function definitions, statements, and built-ins.
+- `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `slice`, `random`, `randint`, `sleep`, `time`, `now`, `strftime`, `argv`, `help`, `set`, `tuple`, `open`, `read`, `write`, `close`, `run`, `run_async`, `async`, `await`, `exit`, `Error`
+
+## 16. Error Messages & Debugging
+
+VirtoLang provides clear, user-friendly error messages with code context and suggestions.
+
+### Example: Invalid Logical Operator
+
+```vlang
+if (5 not 3) {
+    print("TRUE")
+} else {
+    print("FALSE")
+}
+```
+
+**Error Output:**
+
+```
+SyntaxError: Expected 'in' or 'is' after 'not' in condition. Did you mean 'not in' or 'is not'?
+  File "ai.vlang", line 1, col 7
+    if (5 not 3){
+          ^
+```
+
+**How to Fix:**
+
+- Use `not in` for membership: `if (5 not in [3]) { ... }`
+- Use `is not` for identity: `if (x is not y) { ... }`
+
+### Example: Exception Handling
+
+```vlang
+try {
+    raise Error("fail!")
+} except Error as e {
+    print(e)
+}
+```
+
+## 17. Example Programs
+
+### Hello World
+
+```vlang
+print("Hello, world!")
+```
+
+### FizzBuzz
+
+```vlang
+for (i in range(1, 16)) {
+    if (i % 3 == 0 and i % 5 == 0) {
+        print("FizzBuzz")
+    } elif (i % 3 == 0) {
+        print("Fizz")
+    } elif (i % 5 == 0) {
+        print("Buzz")
+    } else {
+        print(i)
+    }
+}
+```
 
 ---
 
-**Notes:**
-- Use `{}` for all code blocks (functions, if, loops, etc.).
-- No indentation or colons required for blocks.
-- Semicolons are optional; use newlines to separate statements.
-- Only integer arithmetic is supported for now.
-- Variable scope is global except for function parameters.
-- Functions can now return values using `return`.
-- Boolean logic and comparison operators are supported.
-
----
-
-**Example Program:**
-
-def greet(name) {
-  print('Hello, ' + name)
-}
-
-def add(a, b) {
-  return a + b
-}
-
-var result = add(5, 7)
-print(result)
-
-greet('World')
-
-var nums = [1, 2, 3]
-for (n in nums) {
-  print(n)
-}
-
-if (1 < 2 and true) {
-  print('Math and booleans work!')
-}
-
----
-
-For more features or questions, ask the developer!
+For more information, see the README or ask for help. Happy coding with VirtoLang!

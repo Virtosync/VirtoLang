@@ -13,12 +13,14 @@ packages = {
     "basic": {"version": "0.0.1", "code": "print('Hello from basic package!')"},
 }
 
+
 def is_admin():
     """Check if the script is running with admin privileges."""
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+
 
 def elevate_to_admin():
     """Re-run the script with admin privileges."""
@@ -52,7 +54,8 @@ def install(package_name, package_version):
     with open(package_file, "w") as f:
         f.write(package_code)
     print(f"Package '{package_name}' version {package_version} installed successfully.")
-    
+
+
 def uninstall(package_name):
     install_dir = os.path.join(os.getenv("VLANG_PATH"), "packages")
     package_dir = os.path.join(install_dir, package_name)
@@ -62,6 +65,7 @@ def uninstall(package_name):
     if os.path.exists(package_dir):
         try:
             import stat
+
             for root, dirs, files in os.walk(package_dir, topdown=False):
                 for name in files:
                     file_path = os.path.join(root, name)
@@ -88,12 +92,20 @@ def uninstall(package_name):
             print(f"Failed to uninstall package '{package_name}': {e}")
     else:
         print(f"Package '{package_name}' not found.")
-    
+
+
 def main():
     parser = a.ArgumentParser(description="VirtoLang Package Manager")
-    parser.add_argument("command", choices=["install", "uninstall", "update"], help="Command to run")
+    parser.add_argument(
+        "command", choices=["install", "uninstall", "update"], help="Command to run"
+    )
     parser.add_argument("name", help="Name of the package to install")
-    parser.add_argument("version", nargs="?", default=None, help="Version of the package to install (optional for uninstall)")
+    parser.add_argument(
+        "version",
+        nargs="?",
+        default=None,
+        help="Version of the package to install (optional for uninstall)",
+    )
 
     args = parser.parse_args()
 
@@ -111,10 +123,13 @@ def main():
         print(f"Updating package '{args.name}' to version {args.version}...")
         uninstall(args.name)
         install(args.name, args.version)
-        
+
+
 if __name__ == "__main__":
     if not os.getenv("VLANG_PATH"):
-        print("VLANG_PATH environment variable is not set. Please set it to the installation directory.")
+        print(
+            "VLANG_PATH environment variable is not set. Please set it to the installation directory."
+        )
         sys.exit(1)
     elevate_to_admin()
     main()

@@ -14,6 +14,52 @@ import asyncio
 init(autoreset=True)
 
 
+class Token:
+    def __init__(self, kind, value, line, column):
+        self.kind = kind
+        self.value = value
+        self.line = line
+        self.column = column
+
+    def __iter__(self):
+        return iter((self.kind, self.value, self.line, self.column))
+
+    def __getitem__(self, idx):
+        return (self.kind, self.value, self.line, self.column)[idx]
+
+    def __repr__(self):
+        return f"Token({self.kind}, {self.value}, line={self.line}, col={self.column})"
+
+
+class ParserError(Exception):
+    def __init__(self, message, token=None, code=None, filename=None):
+        self.message = message
+        self.token = token
+        self.code = code
+        self.filename = filename
+        super().__init__(self.__str__())
+
+    def __str__(self):
+        if self.token:
+            pointer = f"File \"{self.filename or '<input>'}\", line {self.token.line}, col {self.token.column}"
+            code_line = ""
+            if self.code:
+                lines = self.code.splitlines()
+                if 1 <= self.token.line <= len(lines):
+                    code_line = lines[self.token.line - 1]
+            return f"{Fore.RED}SyntaxError: {self.message}\n  {pointer}\n    {code_line}\n    {' '*(self.token.column-1)}^"
+        return f"{Fore.RED}SyntaxError: {self.message}"
+
+
+class Error(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        return f"Error: {self.message}"
+
+
 def tokenize(code):
     token_spec = [
         ("NUMBER", r"\d+"),
@@ -36,10 +82,19 @@ def tokenize(code):
         ("AS", r"as"),
         ("RUN", r"run"),
         ("RUN_ASYNC", r"run_async"),
+        ("IS", r"is"),
+        ("IN", r"in"),
+        ("NOT", r"not"),
         # Correct string literal regex for both single and double quotes
         ("STRING", r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\''),
-        ("IDENTIFIER", r"[a-zA-Z_]\w*"),
+        ("LE", r"<="),
+        ("GE", r">="),
+        ("EQ", r"=="),
+        ("NEQ", r"!="),
+        ("LT", r"<"),
+        ("GT", r">"),
         ("ASSIGN", r"="),
+        ("IDENTIFIER", r"[a-zA-Z_]\w*"),
         ("PLUS", r"\+"),
         ("SKIP", r"[ \t]+"),
         ("NEWLINE", r"\n"),
@@ -57,35 +112,43 @@ def tokenize(code):
         ("DOT", r"\."),
         ("AND", r"&&"),
         ("OR", r"\|\|"),
-        ("NOT", r"!"),
-        ("LT", r"<"),
-        ("GT", r">"),
-        ("LE", r"<="),
-        ("GE", r">="),
-        ("EQ", r"=="),
-        ("NEQ", r"!="),
+        ("BANG", r"!"),
         ("LBRACKET", r"\["),
         ("RBRACKET", r"\]"),
         ("COMMENT", r"#.*"),
         ("BLOCK_COMMENT", r"/\*.*?\*/"),
+        ("RAISE", r"raise"),
+        ("TRY", r"try"),
+        ("EXCEPT", r"except"),
+        ("FINALLY", r"finally"),
         ("MISMATCH", r"."),
     ]
     token_regex = "|".join(f"(?P<{name}>{pattern})" for name, pattern in token_spec)
     tokens = []
     regex = re.compile(token_regex, re.DOTALL)
+    line_num = 1
+    line_start = 0
     for match in regex.finditer(code):
         kind = match.lastgroup
         value = match.group()
+        start = match.start()
+        end = match.end()
+        column = start - line_start + 1
+        if kind == "NEWLINE":
+            line_num += 1
+            line_start = end
+            continue
         if kind == "SKIP":
             continue
         elif kind == "MISMATCH":
-            raise SyntaxError(f"Unexpected character: {value}")
+            raise ParserError(
+                f"Unexpected character: {value}",
+                Token(kind, value, line_num, column),
+                code,
+            )
         elif kind in ("COMMENT", "BLOCK_COMMENT", "C_COMMENT"):
             continue
-        elif kind == "NEWLINE":
-            continue
         elif kind == "STRING":
-            # Do not strip quotes here, keep the string as-is
             pass
         elif kind == "NUMBER":
             value = int(value)
@@ -161,15 +224,16 @@ def tokenize(code):
             value = "=="
         elif kind == "NEQ":
             value = "!="
-
-        tokens.append((kind, value))
+        tokens.append(Token(kind, value, line_num, column))
     return tokens
 
 
 class Parser:
-    def __init__(self, tokens):
+    def __init__(self, tokens, code=None, filename=None):
         self.tokens = tokens
         self.pos = 0
+        self.code = code
+        self.filename = filename
 
     def peek(self):
         if self.pos < len(self.tokens):
@@ -181,10 +245,15 @@ class Parser:
 
     def match(self, *token_types):
         token = self.peek()
-        if token and token[0] in token_types:
+        if token and token.kind in token_types:
             self.advance()
             return token
         return None
+
+    def error(self, message, token=None):
+        if token is None:
+            token = self.peek()
+        raise ParserError(message, token, self.code, self.filename)
 
     def parse(self):
         statements = []
@@ -221,8 +290,16 @@ class Parser:
             return self.run_statement()
         elif self.match("RUN_ASYNC"):
             return self.run_async_statement()
+        elif self.match("TRY"):
+            return self.try_statement()
+        elif self.match("RAISE"):
+            return self.raise_statement()
         else:
             return self.expression_statement()
+
+    def raise_statement(self):
+        expr = self.expression()
+        return ("raise", expr)
 
     def import_statement(self):
         # Accept either IDENTIFIER or STRING after 'import'
@@ -230,7 +307,9 @@ class Parser:
         if not module_token:
             module_token = self.match("STRING")
         if not module_token:
-            raise SyntaxError("Expected module name (identifier or string) after 'import'")
+            raise SyntaxError(
+                "Expected module name (identifier or string) after 'import'"
+            )
         return ("import", module_token[1])
 
     def var_declaration(self):
@@ -294,29 +373,46 @@ class Parser:
         return ("async_function_decl", name[1], params, body)
 
     def if_statement(self):
-        if not self.match("LPAREN"):
-            raise SyntaxError("Expected '(' after 'if'")
-        cond = self.expression()
+        lparen = self.match("LPAREN")
+        if not lparen:
+            self.error("Expected '(' after 'if'", lparen)
+        cond_start = self.pos
+        try:
+            cond = self.expression()
+        except ParserError as e:
+            # Special case: if user wrote 'not' without 'in' or 'is'
+            token = self.peek()
+            if token and token.kind == "NOT":
+                self.error(
+                    "Expected 'in' or 'is' after 'not' in condition. Did you mean 'not in' or 'is not'?",
+                    token,
+                )
+            raise
         if not self.match("RPAREN"):
-            raise SyntaxError("Expected ')' after if condition")
+            token = self.peek()
+            self.error(
+                "Expected ')' after if condition. Make sure your condition is valid. Example: if (x not in y) {{ ... }}",
+                token,
+            )
         if not self.match("LBRACE"):
-            raise SyntaxError("Expected '{' after if condition")
+            token = self.peek()
+            self.error("Expected '{' after if condition", token)
         then_block = self.block()
         elif_blocks = []
         while self.match("ELIF"):
             if not self.match("LPAREN"):
-                raise SyntaxError("Expected '(' after 'elif'")
+                self.error("Expected '(' after 'elif'")
             elif_cond = self.expression()
             if not self.match("RPAREN"):
-                raise SyntaxError("Expected ')' after elif condition")
+                self.error("Expected ')' after elif condition")
             if not self.match("LBRACE"):
-                raise SyntaxError("Expected '{' after elif condition")
+                self.error("Expected '{' after elif condition")
             elif_block = self.block()
             elif_blocks.append((elif_cond, elif_block))
         else_block = None
         if self.match("ELSE"):
             if not self.match("LBRACE"):
-                raise SyntaxError("Expected '{' after 'else'")
+                self.error("Expected '{' after 'else'")
             else_block = self.block()
         return ("if", cond, then_block, elif_blocks, else_block)
 
@@ -404,20 +500,43 @@ class Parser:
         return ("expr_stmt", expr)
 
     def expression(self):
-        return self.logic_or()
+        return self.logic_not()
 
-    def logic_or(self):
-        node = self.logic_and()
-        while self.match("OR"):
-            right = self.logic_and()
-            node = ("or", node, right)
+    def logic_not(self):
+        if self.match("NOT"):
+            expr = self.logic_not()
+            return ("not", expr)
+        return self.logic_is()
+
+    def logic_is(self):
+        node = self.logic_in()
+        while True:
+            if self.match("IS"):
+                if self.match("NOT"):
+                    right = self.logic_in()
+                    node = ("is not", node, right)
+                else:
+                    right = self.logic_in()
+                    node = ("is", node, right)
+            else:
+                break
         return node
 
-    def logic_and(self):
+    def logic_in(self):
         node = self.equality()
-        while self.match("AND"):
-            right = self.equality()
-            node = ("and", node, right)
+        while True:
+            if self.match("NOT"):
+                if self.match("IN"):
+                    right = self.equality()
+                    node = ("not in", node, right)
+                else:
+                    self.pos -= 1  # Unconsume NOT if not followed by IN
+                    break
+            elif self.match("IN"):
+                right = self.equality()
+                node = ("in", node, right)
+            else:
+                break
         return node
 
     def equality(self):
@@ -448,6 +567,12 @@ class Parser:
             elif self.match("GE"):
                 right = self.additive()
                 node = (">=", node, right)
+            elif self.match("EQ"):
+                right = self.additive()
+                node = ("==", node, right)
+            elif self.match("NEQ"):
+                right = self.additive()
+                node = ("!=", node, right)
             else:
                 break
         return node
@@ -616,6 +741,8 @@ class Interpreter:
                 "run_async": self._bif_run_async,
                 "async": self._bif_async,
                 "await": self._bif_await,
+                "exit": lambda code=0: sys.exit(code),
+                "Error": Error,
             }
         )
         self._async_tasks = []
@@ -718,8 +845,10 @@ class Interpreter:
                 return True
             elif name == "false":
                 return False
+            elif name == "Error":
+                return Error
             else:
-                raise RuntimeError(f"Undefined variable: {name}")
+                raise VirtoRuntimeError(f"Undefined variable: {name}")
         elif node[0] == "string":
             return node[1]
         elif node[0] == "if":
@@ -760,7 +889,9 @@ class Interpreter:
             module_name = node[1]
             vlang_path = os.environ.get("VLANG_PATH", os.getcwd())
             # Support quoted string import: import "C:/test"
-            if (module_name.startswith("\"") and module_name.endswith("\"")) or (module_name.startswith("'") and module_name.endswith("'")):
+            if (module_name.startswith('"') and module_name.endswith('"')) or (
+                module_name.startswith("'") and module_name.endswith("'")
+            ):
                 # Remove quotes
                 path = module_name[1:-1]
                 if not path.endswith(".vlang"):
@@ -774,7 +905,9 @@ class Interpreter:
                 found = False
                 if len(parts) == 1:
                     # Try <VLANG_PATH>/packages/test/__init__.vlang
-                    dir_init = os.path.join(vlang_path, "packages", parts[0], "__init__.vlang")
+                    dir_init = os.path.join(
+                        vlang_path, "packages", parts[0], "__init__.vlang"
+                    )
                     search_paths.append(dir_init)
                     # Try <VLANG_PATH>/packages/test.vlang
                     file_mod = os.path.join(vlang_path, "packages", parts[0] + ".vlang")
@@ -800,7 +933,9 @@ class Interpreter:
                     if os.path.isfile(filename):
                         found = True
                 if not found:
-                    raise RuntimeError(f"Module '{module_name}' not found. Searched: {search_paths}")
+                    raise RuntimeError(
+                        f"Module '{module_name}' not found. Searched: {search_paths}"
+                    )
             with open(filename, "r") as f:
                 code = f.read()
             tokens = tokenize(code)
@@ -855,6 +990,20 @@ class Interpreter:
             return await self.execute(node[1], env) > await self.execute(node[2], env)
         elif node[0] == ">=":
             return await self.execute(node[1], env) >= await self.execute(node[2], env)
+        elif node[0] == "not":
+            return not await self.execute(node[1], env)
+        elif node[0] == "is":
+            return await self.execute(node[1], env) is await self.execute(node[2], env)
+        elif node[0] == "is not":
+            return await self.execute(node[1], env) is not await self.execute(
+                node[2], env
+            )
+        elif node[0] == "in":
+            return await self.execute(node[1], env) in await self.execute(node[2], env)
+        elif node[0] == "not in":
+            return await self.execute(node[1], env) not in await self.execute(
+                node[2], env
+            )
         else:
             raise RuntimeError(f"Unknown AST node: {node}")
 
@@ -869,9 +1018,29 @@ class Interpreter:
         await self.execute_block(ast, env)
 
 
-async def run(code):
+class VirtoRuntimeError(Exception):
+    def __init__(self, message, token=None, code=None, filename=None):
+        self.message = message
+        self.token = token
+        self.code = code
+        self.filename = filename
+        super().__init__(self.__str__())
+
+    def __str__(self):
+        if self.token:
+            pointer = f"File \"{self.filename or '<input>'}\", line {self.token.line}, col {self.token.column}"
+            code_line = ""
+            if self.code:
+                lines = self.code.splitlines()
+                if 1 <= self.token.line <= len(lines):
+                    code_line = lines[self.token.line - 1]
+            return f"{Fore.RED}RuntimeError: {self.message}\n  {pointer}\n    {code_line}\n    {' '*(self.token.column-1)}^"
+        return f"{Fore.RED}RuntimeError: {self.message}"
+
+
+async def run(code, filename=None):
     tokens = tokenize(code)
-    parser = Parser(tokens)
+    parser = Parser(tokens, code=code, filename=filename)
     ast = parser.parse()
     interpreter = Interpreter()
     await interpreter.run(ast)
@@ -880,7 +1049,7 @@ async def run(code):
 def run_file(file):
     with open(file, "r") as f:
         code = f.read()
-    asyncio.run(run(code))
+    asyncio.run(run(code, filename=file))
 
 
 if __name__ == "__main__":
@@ -897,6 +1066,12 @@ if __name__ == "__main__":
 
     try:
         run_file(args.file)
+    except ParserError as e:
+        print(e)
+        sys.exit(1)
+    except VirtoRuntimeError as e:
+        print(e)
+        sys.exit(1)
     except Exception as e:
-        print(f"{Fore.RED}Error: {e}")
-        traceback.print_exc()
+        print(f"{Fore.RED}Interpreter bug: {e}")
+        # traceback.print_exc()
