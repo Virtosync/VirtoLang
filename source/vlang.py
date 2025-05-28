@@ -1146,17 +1146,17 @@ class Interpreter:
         parser = Parser(tokens, code=code, filename=filename)
         ast = parser.parse()
         interpreter = Interpreter()
+        # Share environment and functions
         interpreter.env = env.copy()
         interpreter.functions = self.functions.copy()
         if is_async:
-            # Run in background as a task
-            return asyncio.create_task(interpreter.run(ast))
-        else:
+            # For run_async, just run and return (as a task in caller)
             await interpreter.run(ast)
-            # Update calling env and functions with any changes
+        else:
+            # For run (sync), run and update caller's env and functions
+            await interpreter.run(ast)
             env.update(interpreter.env)
             self.functions.update(interpreter.functions)
-        return None
 
 
 class VirtoRuntimeError(Exception):
