@@ -1,15 +1,14 @@
 import re
 import sys
-import traceback
-from colorama import init, Fore, Style
-import argparse
 import os
-import math
-import requests
-import random
-import time
-from datetime import datetime
 import asyncio
+import time
+import random
+import math
+import argparse
+from colorama import init, Fore, Style
+import requests
+from datetime import datetime
 
 init(autoreset=True)
 
@@ -63,28 +62,25 @@ class Error(Exception):
 def tokenize(code):
     token_spec = [
         ("NUMBER", r"\d+"),
-        ("PRINT", r"print"),
-        ("IF", r"if"),
-        ("ASYNC", r"async"),
-        ("AWAIT", r"await"),
-        ("ELSE", r"else"),
-        ("ELIF", r"elif"),
-        ("WHILE", r"while"),
-        ("FOR", r"for"),
-        ("RETURN", r"return"),
-        ("DEF", r"def"),
-        ("VAR", r"var"),
-        ("TRUE", r"true"),
-        ("FALSE", r"false"),
-        ("NULL", r"null"),
-        ("IMPORT", r"import"),
-        ("WITH", r"with"),
-        ("AS", r"as"),
-        ("RUN", r"run"),
-        ("RUN_ASYNC", r"run_async"),
-        ("IS", r"is"),
-        ("IN", r"in"),
-        ("NOT", r"not"),
+        ("PRINT", r"\bprint\b"),
+        ("IF", r"\bif\b"),
+        ("ASYNC", r"\basync\b"),
+        ("AWAIT", r"\bawait\b"),
+        ("ELSE", r"\belse\b"),
+        ("ELIF", r"\belif\b"),
+        ("WHILE", r"\bwhile\b"),
+        ("FOR", r"\bfor\b"),
+        ("RETURN", r"\breturn\b"),
+        ("DEF", r"\bdef\b"),
+        ("TRUE", r"\btrue\b"),
+        ("FALSE", r"\bfalse\b"),
+        ("NULL", r"\bnull\b"),
+        ("IMPORT", r"\bimport\b"),
+        ("WITH", r"\bwith\b"),
+        ("AS", r"\bas\b"),
+        ("IS", r"\bis\b"),
+        ("IN", r"\bin\b"),
+        ("NOT", r"\bnot\b"),
         # Correct string literal regex for both single and double quotes
         ("STRING", r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\''),
         ("LE", r"<="),
@@ -153,7 +149,8 @@ def tokenize(code):
         elif kind == "NUMBER":
             value = int(value)
         elif kind == "IDENTIFIER":
-            if value in (
+            # Only treat as keyword if the value is exactly equal to the keyword
+            keywords = (
                 "if",
                 "else",
                 "elif",
@@ -161,7 +158,6 @@ def tokenize(code):
                 "for",
                 "return",
                 "def",
-                "var",
                 "true",
                 "false",
                 "null",
@@ -174,9 +170,12 @@ def tokenize(code):
                 "as",
                 "async",
                 "await",
-                "run",
-                "run_async",
-            ):
+                "try",
+                "except",
+                "finally",
+                "raise",
+            )
+            if value in keywords:
                 kind = value.upper()
         elif kind == "ASSIGN":
             value = "="
@@ -264,12 +263,62 @@ class Parser:
         return statements
 
     def statement(self):
-        if self.match("VAR"):
-            return self.var_declaration()
+        # Assignment: IDENTIFIER ASSIGN expression
+        if self.peek() and self.peek().kind == "IDENTIFIER":
+            # Lookahead for assignment
+            if (
+                self.pos + 1 < len(self.tokens)
+                and self.tokens[self.pos + 1].kind == "ASSIGN"
+            ):
+                name_token = self.match("IDENTIFIER")
+                self.match("ASSIGN")
+                expr = self.expression()
+                return ("assign", name_token[1], expr)
+            # If next token is LPAREN, treat as function call statement (e.g., run(...), run_async(...))
+            elif (
+                self.pos + 1 < len(self.tokens)
+                and self.tokens[self.pos + 1].kind == "LPAREN"
+            ):
+                expr = self.expression()
+                return ("expr_stmt", expr)
+        # async def ...
+        elif self.peek() and self.peek().kind == "ASYNC":
+            self.advance()  # consume ASYNC
+            if not self.match("DEF"):
+                self.error("Expected 'def' after 'async'")
+            next_token = self.peek()
+            if not next_token:
+                self.error(
+                    "Expected function name after 'async def', but found end of input"
+                )
+            if next_token.kind != "IDENTIFIER":
+                self.error(
+                    f"Expected function name after 'async def', but found {next_token.kind} ('{next_token.value}') instead",
+                    next_token,
+                )
+            name_token = self.match("IDENTIFIER")
+            name = name_token[1]
+            if not self.match("LPAREN"):
+                self.error("Expected '(' after function name")
+            params = []
+            if not self.match("RPAREN"):
+                while True:
+                    param_token = self.match("IDENTIFIER")
+                    if not param_token:
+                        self.error("Expected parameter name in function definition")
+                    params.append(param_token[1])
+                    if self.match("COMMA"):
+                        continue
+                    elif self.match("RPAREN"):
+                        break
+                    else:
+                        self.error("Expected ',' or ')' in parameter list")
+            if not self.match("LBRACE"):
+                self.error("Expected '{' to start function body")
+            body = self.block()
+            return ("async_function_decl", name, params, body)
         elif self.match("DEF"):
             return self.function_declaration()
-        elif self.match("ASYNC"):
-            return self.async_function_declaration()
         elif self.match("IF"):
             return self.if_statement()
         elif self.match("WHILE"):
@@ -286,10 +335,6 @@ class Parser:
             return self.return_statement()
         elif self.match("AWAIT"):
             return self.await_statement()
-        elif self.match("RUN"):
-            return self.run_statement()
-        elif self.match("RUN_ASYNC"):
-            return self.run_async_statement()
         elif self.match("TRY"):
             return self.try_statement()
         elif self.match("RAISE"):
@@ -312,65 +357,29 @@ class Parser:
             )
         return ("import", module_token[1])
 
-    def var_declaration(self):
-        ident = self.match("IDENTIFIER")
-        if not ident:
-            raise SyntaxError("Expected identifier after 'var'")
-        assign = self.match("ASSIGN")
-        if not assign:
-            raise SyntaxError("Expected '=' after variable name")
-        expr = self.expression()
-        return ("var_decl", ident[1], expr)
-
     def function_declaration(self):
         name = self.match("IDENTIFIER")
         if not name:
-            raise SyntaxError("Expected function name after 'def'")
+            self.error("Expected function name after 'def'")
         if not self.match("LPAREN"):
-            raise SyntaxError("Expected '(' after function name")
+            self.error("Expected '(' after function name")
         params = []
         if not self.match("RPAREN"):
             while True:
                 param = self.match("IDENTIFIER")
                 if not param:
-                    raise SyntaxError("Expected parameter name")
+                    self.error("Expected parameter name in function definition")
                 params.append(param[1])
                 if self.match("COMMA"):
                     continue
                 elif self.match("RPAREN"):
                     break
                 else:
-                    raise SyntaxError("Expected ',' or ')' in parameter list")
+                    self.error("Expected ',' or ')' in parameter list")
         if not self.match("LBRACE"):
-            raise SyntaxError("Expected '{' to start function body")
+            self.error("Expected '{' to start function body")
         body = self.block()
         return ("function_decl", name[1], params, body)
-
-    def async_function_declaration(self):
-        if not self.match("DEF"):
-            raise SyntaxError("Expected 'def' after 'async'")
-        name = self.match("IDENTIFIER")
-        if not name:
-            raise SyntaxError("Expected function name after 'async def'")
-        if not self.match("LPAREN"):
-            raise SyntaxError("Expected '(' after function name")
-        params = []
-        if not self.match("RPAREN"):
-            while True:
-                param = self.match("IDENTIFIER")
-                if not param:
-                    raise SyntaxError("Expected parameter name")
-                params.append(param[1])
-                if self.match("COMMA"):
-                    continue
-                elif self.match("RPAREN"):
-                    break
-                else:
-                    raise SyntaxError("Expected ',' or ')' in parameter list")
-        if not self.match("LBRACE"):
-            raise SyntaxError("Expected '{' to start function body")
-        body = self.block()
-        return ("async_function_decl", name[1], params, body)
 
     def if_statement(self):
         lparen = self.match("LPAREN")
@@ -473,11 +482,17 @@ class Parser:
         lparen = self.match("LPAREN")
         if not lparen:
             raise SyntaxError("Expected '(' after 'print'")
-        expr = self.expression()
-        rparen = self.match("RPAREN")
-        if not rparen:
-            raise SyntaxError("Expected ')' after print expression")
-        return ("print", expr)
+        args = []
+        if not self.match("RPAREN"):
+            while True:
+                args.append(self.expression())
+                if self.match("COMMA"):
+                    continue
+                elif self.match("RPAREN"):
+                    break
+                else:
+                    raise SyntaxError("Expected ',' or ')' after print argument")
+        return ("print", args)
 
     def return_statement(self):
         expr = self.expression()
@@ -500,12 +515,20 @@ class Parser:
         return ("expr_stmt", expr)
 
     def expression(self):
-        return self.logic_not()
+        node = self.logic_not()
+        # If this is a function call, handle run/run_async as statements
+        if isinstance(node, tuple) and node[0] == "call":
+            func_name = node[1]
+            if func_name == "run":
+                return ("run_stmt", node[2][0])
+            elif func_name == "run_async":
+                return ("run_async_stmt", node[2][0])
+        return node
 
     def logic_not(self):
         if self.match("NOT"):
             expr = self.logic_not()
-            return ("not", expr)
+            return ("await_expr", expr)
         return self.logic_is()
 
     def logic_is(self):
@@ -661,6 +684,34 @@ class Parser:
                     raise SyntaxError("Expected ',' or ']' in list literal")
         return ("list", elements)
 
+    def try_statement(self):
+        if not self.match("LBRACE"):
+            self.error("Expected '{' after 'try'")
+        try_block = self.block()
+        except_blocks = []
+        finally_block = None
+        while self.match("EXCEPT"):
+            exc_type = None
+            exc_var = None
+            # Optional exception type
+            if self.peek() and self.peek().kind == "IDENTIFIER":
+                exc_type = self.match("IDENTIFIER")[1]
+            # Optional 'as' exc_var
+            if self.match("AS"):
+                var_token = self.match("IDENTIFIER")
+                if not var_token:
+                    self.error("Expected variable name after 'as' in except block")
+                exc_var = var_token[1]
+            if not self.match("LBRACE"):
+                self.error("Expected '{' after 'except' block")
+            except_block = self.block()
+            except_blocks.append((exc_type, exc_var, except_block))
+        if self.match("FINALLY"):
+            if not self.match("LBRACE"):
+                self.error("Expected '{' after 'finally'")
+            finally_block = self.block()
+        return ("try", try_block, except_blocks, finally_block)
+
 
 class ReturnException(Exception):
     def __init__(self, value):
@@ -792,10 +843,11 @@ class Interpreter:
         return loop.run_until_complete(task)
 
     async def execute(self, node, env=None):
-        if node[0] == "var_decl":
+        if node[0] == "assign":
             _, name, expr = node
             value = await self.execute(expr, env)
             env[name] = value
+            return value
         elif node[0] == "function_decl":
             _, name, params, body = node
 
@@ -809,6 +861,7 @@ class Interpreter:
                     return ret.value
 
             env[name] = func
+            self.functions[name] = ("sync", params, body)
         elif node[0] == "async_function_decl":
             _, name, params, body = node
 
@@ -817,14 +870,15 @@ class Interpreter:
                 for i, param in enumerate(params):
                     local_env[param] = args[i] if i < len(args) else None
                 try:
-                    await self.execute_block(body, local_env)
+                    return await self.execute_block(body, local_env)
                 except ReturnException as ret:
                     return ret.value
 
             env[name] = async_func
+            self.functions[name] = ("async", params, body)
         elif node[0] == "print":
-            value = await self.execute(node[1], env)
-            print(value)
+            values = [await self.execute(arg, env) for arg in node[1]]
+            print(*values)
         elif node[0] == "expr_stmt":
             return await self.execute(node[1], env)
         elif node[0] == "+":
@@ -838,17 +892,12 @@ class Interpreter:
         elif node[0] == "number":
             return node[1]
         elif node[0] == "identifier":
-            name = node[1]
-            if name in env:
-                return env[name]
-            elif name == "true":
-                return True
-            elif name == "false":
-                return False
-            elif name == "Error":
-                return Error
+            if node[1] in env:
+                return env[node[1]]
+            elif node[1] in self.builtins:
+                return self.builtins[node[1]]
             else:
-                raise VirtoRuntimeError(f"Undefined variable: {name}")
+                raise VirtoRuntimeError(f"Undefined variable: {node[1]}")
         elif node[0] == "string":
             return node[1]
         elif node[0] == "if":
@@ -873,18 +922,40 @@ class Interpreter:
         elif node[0] == "list":
             return [await self.execute(e, env) for e in node[1]]
         elif node[0] == "call":
-            func_name = node[1]
-            args = [await self.execute(arg, env) for arg in node[2]]
-            if func_name in self.builtins:
-                bif = self.builtins[func_name]
-                if asyncio.iscoroutinefunction(bif):
-                    return await bif(*args)
+            func = node[1]
+            args = node[2]
+            if func in self.builtins:
+                result = self.builtins[func](
+                    *[await self.execute(arg, env) for arg in args]
+                )
+                return result
+            elif func in self.functions:
+                ftype, params, body = self.functions[func]
+                local_env = env.copy()
+                for i, param in enumerate(params):
+                    local_env[param] = (
+                        await self.execute(args[i], env) if i < len(args) else None
+                    )
+                if ftype == "sync":
+                    try:
+                        for stmt in body:
+                            await self.execute(stmt, local_env)
+                    except ReturnException as re:
+                        return re.value
+                elif ftype == "async":
+
+                    async def async_func():
+                        try:
+                            for stmt in body:
+                                await self.execute(stmt, local_env)
+                        except ReturnException as re:
+                            return re.value
+
+                    return await async_func()
                 else:
-                    return bif(*args)
-            if func_name not in env:
-                raise RuntimeError(f"Undefined function: {func_name}")
-            func = env[func_name]
-            return await func(*args)
+                    raise VirtoRuntimeError(f"Unknown function type: {ftype}")
+            else:
+                raise VirtoRuntimeError(f"Undefined function: {func}")
         elif node[0] == "import":
             module_name = node[1]
             vlang_path = os.environ.get("VLANG_PATH", os.getcwd())
@@ -959,9 +1030,10 @@ class Interpreter:
             value = await self.execute(node[1], env)
             raise ReturnException(value)
         elif node[0] == "await_stmt":
-            _, expr = node
-            task = await self.execute(expr, env)
-            return await task
+            task = await self.execute(node[1], env)
+            if hasattr(task, "__await__"):
+                return await task
+            return task
         elif node[0] == "run_stmt":
             _, filename_expr = node
             filename = await self.execute(filename_expr, env)
@@ -973,7 +1045,9 @@ class Interpreter:
         elif node[0] == "await_expr":
             _, expr = node
             task = await self.execute(expr, env)
-            return await task
+            if hasattr(task, "__await__"):
+                return await task
+            return task
         elif node[0] == "or":
             return await self.execute(node[1], env) or await self.execute(node[2], env)
         elif node[0] == "and":
@@ -1004,6 +1078,53 @@ class Interpreter:
             return await self.execute(node[1], env) not in await self.execute(
                 node[2], env
             )
+        elif node[0] == "try":
+            try_block = node[1]
+            except_blocks = node[2]
+            finally_block = node[3]
+            try:
+                result = await self.execute_block(try_block, env)
+            except Exception as exc:
+                handled = False
+                for exc_type, exc_var, exc_block in except_blocks:
+                    if exc_type is None or (type(exc).__name__ == exc_type):
+                        local_env = env.copy()
+                        if exc_var:
+                            local_env[exc_var] = exc
+                        await self.execute_block(exc_block, local_env)
+                        handled = True
+                        break
+                if not handled:
+                    raise
+            finally:
+                if finally_block:
+                    await self.execute_block(finally_block, env)
+            return None
+        elif node[0] == "raise":
+            exc = await self.execute(node[1], env)
+            raise exc
+        elif node[0] == "try":
+            try_block = node[1]
+            except_blocks = node[2]
+            finally_block = node[3]
+            try:
+                result = await self.execute_block(try_block, env)
+            except Exception as exc:
+                handled = False
+                for exc_type, exc_var, exc_block in except_blocks:
+                    if exc_type is None or (type(exc).__name__ == exc_type):
+                        local_env = env.copy()
+                        if exc_var:
+                            local_env[exc_var] = exc
+                        await self.execute_block(exc_block, local_env)
+                        handled = True
+                        break
+                if not handled:
+                    raise
+            finally:
+                if finally_block:
+                    await self.execute_block(finally_block, env)
+            return None
         else:
             raise RuntimeError(f"Unknown AST node: {node}")
 
@@ -1016,6 +1137,26 @@ class Interpreter:
     async def run(self, ast):
         env = self.env.copy()
         await self.execute_block(ast, env)
+
+    async def run_file(self, filename, env, is_async=False):
+        # Load and execute another .vlang file, sharing env and functions
+        with open(filename, "r") as f:
+            code = f.read()
+        tokens = tokenize(code)
+        parser = Parser(tokens, code=code, filename=filename)
+        ast = parser.parse()
+        interpreter = Interpreter()
+        interpreter.env = env.copy()
+        interpreter.functions = self.functions.copy()
+        if is_async:
+            # Run in background as a task
+            return asyncio.create_task(interpreter.run(ast))
+        else:
+            await interpreter.run(ast)
+            # Update calling env and functions with any changes
+            env.update(interpreter.env)
+            self.functions.update(interpreter.functions)
+        return None
 
 
 class VirtoRuntimeError(Exception):
