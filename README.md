@@ -8,7 +8,7 @@ VirtoLang is a modern, Python-inspired scripting language with curly-brace block
 
 1. **Download the Installer:**
    - Go to the `install` folder in this repository.
-   - Choose your desired version (e.g., `v1`).
+   - Choose your desired version (e.g., `v2`).
    - Click on `virtolang-installer.exe`.
    - Click the **Raw** button to download and run the installer.
    - Follow the prompts to complete the installation.
