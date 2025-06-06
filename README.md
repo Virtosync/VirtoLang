@@ -1,6 +1,22 @@
 # VirtoLang Language Reference & User Guide
 
-VirtoLang is a modern, Python-inspired scripting language with curly-brace blocks, dynamic typing, async/await, and robust error handling. This guide covers installation, language features, syntax, error handling, and advanced usage with full examples.
+VirtoLang is a modern, Python-inspired scripting language with curly-brace blocks, dynamic typing, async/await, robust error handling, and a massive set of built-in features. It now includes nearly all Python built-ins, advanced modules, and utilities, plus speed optimizations for interpreted code. This guide covers installation, language features, syntax, error handling, advanced usage, and new Pythonic capabilities.
+
+---
+
+## Key Features (as of June 2025)
+- **Python-like syntax**: Indentation-insensitive, curly-brace blocks, dynamic typing, and familiar operators.
+- **Async/await**: Native support for asynchronous functions, tasks, and file execution.
+- **Robust error handling**: Python-style `try`/`except`/`finally`, custom exceptions, and clear error messages.
+- **Classes and functions**: Define and call functions (sync and async), with support for return values and parameters.
+- **Comprehensions, lambdas, match statements**: (Planned/partial)
+- **Advanced modules**: HTTP requests, file I/O, date/time, random, math, and more.
+- **Import system**: Import other VirtoLang files or packages, with flexible path and package support.
+- **Slicing, sets, tuples, and more**: Pythonic data structures and operations.
+- **Command-line interface**: Run `.vlang` files directly from the terminal.
+- **Optimized interpreter**: Fast tokenization, parsing, and execution, with local variable lookups and minimal overhead.
+- **Extensible**: Easy to add new built-in functions and modules.
+- **Clear, user-friendly error messages**: With code context and suggestions.
 
 ---
 
@@ -11,11 +27,11 @@ VirtoLang is a modern, Python-inspired scripting language with curly-brace block
    - Choose your desired version (e.g., `v2`).
    - Click on `virtolang-installer.exe`.
    - Click the **Raw** button to download and run the installer.
-   - Follow the prompts to complete the installation.
+   - Follow the prompts to complete installation.
 
 2. **Verify Installation:**
-   - Open a terminal or command prompt (if it is already open, restart your terminal or command prompt or restart your computer).
-   - Run: `vlang` to check that VirtoLang is installed.
+   - Open a terminal or command prompt.
+   - Run: `vlang --version` or `vlang` to check that VirtoLang is installed.
 
 ---
 
@@ -54,7 +70,8 @@ vlang hello.vlang
 - [16. Error Messages & Debugging](#16-error-messages--debugging)
 - [17. Example Programs](#17-example-programs)
 - [18. Advanced Usage](#18-advanced-usage)
-- [19. Troubleshooting](#19-troubleshooting)
+- [19. Speed & Performance](#19-speed--performance)
+- [20. Troubleshooting](#20-troubleshooting)
 
 ---
 
@@ -89,6 +106,11 @@ Variables are dynamically typed and can be reassigned to any type.
   dict_set(d, "key", 123)
   print(dict_get(d, "key"))
   ```
+- **Sets & Tuples:**
+  ```vlang
+  s = set(1, 2, 3)
+  t = tuple(1, 2, 3)
+  ```
 
 ## 3. Printing
 Use `print()` to output values:
@@ -99,13 +121,15 @@ print("Sum:", 2 + 2)
 ```
 
 ## 4. Arithmetic & Comparison
-Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`:
+Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `%`, `mod`, `pow`, `abs`, etc.:
 ```vlang
 y = 6
 print(y / 2)  # prints 3.0
 if (y >= 3 and y < 10) {
     print("In range")
 }
+print(mod(10, 3))  # 1
+print(pow(2, 8))   # 256.0
 ```
 
 ## 5. Boolean Logic
@@ -119,18 +143,23 @@ Supports Python-style logical operators:
 - `not in`, `is not`, `in`, `is`
 
 ## 6. Strings
-Single or double quotes supports escape sequences:
+Single or double quotes, supports escape sequences:
 ```vlang
 s = 'hello\nworld'
 t = "She said, \"hi!\""
 print(s)
 print(t)
 ```
-String concatenation:
+String concatenation and built-ins:
 ```vlang
 name = "Virto"
 greeting = "Hello, " + name
 print(greeting)
+print(upper(greeting))
+print(lower(greeting))
+print(replace(greeting, "Hello", "Hi"))
+print(split(greeting, ", "))
+print(join(["a", "b", "c"], ","))
 ```
 
 ## 7. Lists
@@ -138,8 +167,11 @@ List literals with brackets:
 ```vlang
 nums = [1, 2, 3, 4]
 print(nums[0])  # 1
-nums.append(5)
+append(nums, 5)
 print(nums)
+print(len(nums))
+print(sorted(nums))
+print(reverse(nums))
 ```
 
 ## 8. Dictionaries
@@ -149,6 +181,7 @@ d = dict()
 dict_set(d, "key", 123)
 print(dict_get(d, "key"))
 print(dict_keys(d))
+print(dict_values(d))
 ```
 
 ## 9. Functions
@@ -194,7 +227,7 @@ while (i < 5) {
 }
 ```
 ### For Loops
-For each over lists:
+For-each over lists:
 ```vlang
 items = [1, 2, 3]
 for (item in items) {
@@ -240,7 +273,7 @@ import mymodule      # Imports mymodule.vlang or mymodule/__init__.vlang
 import "C:/path/to/file"  # Imports file.vlang from a path
 ```
 - When importing a package, VirtoLang looks for `__init__.vlang` in the package directory.
-- You can organise code into packages and modules for reuse.
+- You can organize code into packages and modules for reuse.
 
 ## 14. Async & Await
 VirtoLang supports async/await and running files. Use function call syntax for `run` and `run_async`:
@@ -274,8 +307,10 @@ print("Result:", result)
 ```
 
 ## 15. Built-in Functions
-VirtoLang includes a rich set of built-in functions:
-- `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `slice`, `random`, `randint`, `sleep`, `time`, `now`, `strftime`, `argv`, `help`, `set`, `tuple`, `open`, `read`, `write`, `close`, `run`, `run_async`, `async`, `await`, `exit`, `Error`
+VirtoLang includes a rich set of built-in functions (see below for a partial list):
+- `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `slice`, `random`, `random_choice`, `randint`, `sleep`, `time`, `now`, `strftime`, `argv`, `help`, `set`, `tuple`, `open`, `read`, `write`, `close`, `run`, `run_async`, `async`, `await`, `exit`, `Error`, `square`, `mod`, `is_prime`, `join`, `split`, `strip`, `startswith`, `endswith`, `find`, `replace`, `upper`, `lower`, `capitalize`, `title`, `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isnumeric`, `superscript`, `subscript`, `format`, `fstring`, `time_now`, `time_sleep`, `time_timestamp`, `time_utcnow`
+- Math: `sin`, `cos`, `tan`, `sqrt`, `log`, `exp`, `pow`, `math_pi`, `math_e`
+- HTTP: `http_get`, `http_post`
 
 ### Example: Using Built-ins
 ```vlang
@@ -283,6 +318,8 @@ print(len([1,2,3]))
 print(type(123))
 print(str(123))
 print(random())
+print(square(7))
+print(is_prime(13))
 ```
 
 ## 16. Error Messages & Debugging
@@ -290,7 +327,7 @@ VirtoLang provides clear, user-friendly error messages with code context and sug
 
 ### Example: Invalid Logical Operator
 ```vlang
-if (5 is not 3) {
+if (5 not 3) {
     print("TRUE")
 } else {
     print("FALSE")
@@ -300,7 +337,7 @@ if (5 is not 3) {
 ```
 SyntaxError: Expected 'in' or 'is' after 'not' in condition. Did you mean 'not in' or 'is not'?
   File "ai.vlang", line 1, col 7
-    if (5 is not 3){
+    if (5 not 3){
           ^
 ```
 **How to Fix:**
@@ -365,16 +402,29 @@ try {
 ```
 
 ### Using Packages
-Organise your code into folders with an `__init__.vlang` file. Import using:
+Organize your code into folders with an `__init__.vlang` file. Import using:
 ```vlang
 import mypackage
 ```
+---
 
-## 19. Troubleshooting
+## 19. Speed & Performance
+VirtoLang is now highly optimized for speed:
+- **Fast tokenization and parsing**: Optimized regex, minimal recursion, efficient AST traversal.
+- **Efficient interpreter dispatch**: Uses fast lookups, caching, and minimal overhead.
+- **Async/await and concurrency**: Leverages Python's asyncio and threading for parallelism.
+- **Compiled module support**: You can import and use compiled Python modules for speed.
+- **Batch execution**: Run multiple scripts or tasks in parallel.
+- **Profiling and debugging tools**: Use `virto_profile`, `virto_timeit`, and more to optimize your code.
+
+---
+
+## 20. Troubleshooting
 - **SyntaxError:** Check for missing braces `{}` or parentheses `()`.
 - **RuntimeError:** Check variable names and function calls.
 - **ImportError:** Ensure the file or package exists and is in the correct location.
 - **Async Issues:** Use `await` with async functions and tasks.
+- **Performance Issues:** Use built-in profiling and concurrency tools.
 - **Still stuck?** See the README or open an issue on GitHub.
 
 ---
