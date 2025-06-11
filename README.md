@@ -417,6 +417,8 @@ VirtoLang is now highly optimized for speed:
 - **Batch execution**: Run multiple scripts or tasks in parallel.
 - **Profiling and debugging tools**: Use `virto_profile`, `virto_timeit`, and more to optimize your code.
 
+##### Please note that it will be slower compare to other languages as it's an interpreted language made with an interpreted language.
+
 ---
 
 ## 20. Troubleshooting
@@ -427,6 +429,14 @@ VirtoLang is now highly optimized for speed:
 - **Performance Issues:** Use built-in profiling and concurrency tools.
 - **Still stuck?** See the README or open an issue on GitHub.
 
+---
+
+## 21. CLI
+- ```vlang --version``` | Gets the currently installed VirtoLang version.
+- ```vlang -V``` | Gets the currently installed VirtoLang version.
+- ```vlang -C "print('test')"``` | Runs code directly from the CLI. (Will print "test")
+- ```vlang --code "print('test')"``` | Runs code directly from the CLI. (Will print "test")
+- ```vlang main.vlang```
 ---
 
 For more information, see the README or ask for help. Happy coding with VirtoLang!
