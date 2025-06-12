@@ -56,7 +56,7 @@ class ParserError(Exception):
 
     def __str__(self):
         # Only access .line and .column if token has those attributes
-        if self.token and hasattr(self.token, 'line') and hasattr(self.token, 'column'):
+        if self.token and hasattr(self.token, "line") and hasattr(self.token, "column"):
             pointer = f"File \"{self.filename or '<input>'}\", line {self.token.line}, col {self.token.column}"
             code_line = ""
             if self.code:

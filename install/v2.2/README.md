@@ -5,6 +5,7 @@ VirtoLang is a modern, Python-inspired scripting language with curly-brace block
 ---
 
 ## Key Features (as of June 2025)
+
 - **Python-like syntax**: Indentation-insensitive, curly-brace blocks, dynamic typing, and familiar operators.
 - **Async/await**: Native support for asynchronous functions, tasks, and file execution.
 - **Robust error handling**: Python-style `try`/`except`/`finally`, custom exceptions, and clear error messages.
@@ -23,6 +24,7 @@ VirtoLang is a modern, Python-inspired scripting language with curly-brace block
 ## Installation
 
 1. **Download the Installer:**
+
    - Go to the `install` folder in this repository.
    - Choose your desired version (e.g., `v2`).
    - Click on `virtolang-installer.exe`.
@@ -52,6 +54,7 @@ vlang hello.vlang
 ---
 
 ## Table of Contents
+
 - [1. Variables](#1-variables)
 - [2. Data Types](#2-data-types)
 - [3. Printing](#3-printing)
@@ -76,14 +79,18 @@ vlang hello.vlang
 ---
 
 ## 1. Variables
+
 Assign variables using Python-style assignment (no `var` keyword needed):
+
 ```vlang
 x = 5
 name = "VirtoLang"
 ```
+
 Variables are dynamically typed and can be reassigned to any type.
 
 ## 2. Data Types
+
 - **Numbers:**
   ```vlang
   n = 42
@@ -113,7 +120,9 @@ Variables are dynamically typed and can be reassigned to any type.
   ```
 
 ## 3. Printing
+
 Use `print()` to output values:
+
 ```vlang
 print("Hello, world!")
 print(x)
@@ -121,7 +130,9 @@ print("Sum:", 2 + 2)
 ```
 
 ## 4. Arithmetic & Comparison
+
 Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `%`, `mod`, `pow`, `abs`, etc.:
+
 ```vlang
 y = 6
 print(y / 2)  # prints 3.0
@@ -133,24 +144,32 @@ print(pow(2, 8))   # 256.0
 ```
 
 ## 5. Boolean Logic
+
 Use `and`, `or`, `not`, and boolean literals:
+
 ```vlang
 if (true and not false) {
     print("Booleans work!")
 }
 ```
+
 Supports Python-style logical operators:
+
 - `not in`, `is not`, `in`, `is`
 
 ## 6. Strings
+
 Single or double quotes, supports escape sequences:
+
 ```vlang
 s = 'hello\nworld'
 t = "She said, \"hi!\""
 print(s)
 print(t)
 ```
+
 String concatenation and built-ins:
+
 ```vlang
 name = "Virto"
 greeting = "Hello, " + name
@@ -163,7 +182,9 @@ print(join(["a", "b", "c"], ","))
 ```
 
 ## 7. Lists
+
 List literals with brackets:
+
 ```vlang
 nums = [1, 2, 3, 4]
 print(nums[0])  # 1
@@ -175,7 +196,9 @@ print(reverse(nums))
 ```
 
 ## 8. Dictionaries
+
 Create and use dictionaries:
+
 ```vlang
 d = dict()
 dict_set(d, "key", 123)
@@ -185,7 +208,9 @@ print(dict_values(d))
 ```
 
 ## 9. Functions
+
 Define and call functions:
+
 ```vlang
 def greet(name) {
     print("Hello, " + name)
@@ -197,16 +222,21 @@ def add(a, b) {
 }
 print(add(2, 3))
 ```
+
 Supports async functions:
+
 ```vlang
 async def foo(x) {
     print(x)
 }
 ```
+
 Return values are optional. Functions can be called before or after their definition.
 
 ## 10. Control Flow
+
 ### If / Elif / Else
+
 ```vlang
 if (x > 0) {
     print("Positive")
@@ -218,7 +248,9 @@ if (x > 0) {
 ```
 
 ## 11. Loops
+
 ### While Loops
+
 ```vlang
 i = 0
 while (i < 5) {
@@ -226,8 +258,11 @@ while (i < 5) {
     i = i + 1
 }
 ```
+
 ### For Loops
+
 For-each over lists:
+
 ```vlang
 items = [1, 2, 3]
 for (item in items) {
@@ -236,7 +271,9 @@ for (item in items) {
 ```
 
 ## 12. Exception Handling
+
 VirtoLang supports Python-style exception handling:
+
 ```vlang
 try {
     raise Error("Something went wrong!")
@@ -246,12 +283,14 @@ try {
     print("Cleanup!")
 }
 ```
+
 - Use `raise` to throw errors.
 - Use `try`/`except`/`finally` for error handling.
 - Use `as` to bind the exception to a variable.
 - The built-in `Error` class can be used or subclassed.
 
 ### More Exception Examples
+
 ```vlang
 try {
     x = 1 / 0
@@ -267,16 +306,21 @@ try {
 ```
 
 ## 13. Imports & Packages
+
 Import other VirtoLang files or packages:
+
 ```vlang
 import mymodule      # Imports mymodule.vlang or mymodule/__init__.vlang
 import "C:/path/to/file"  # Imports file.vlang from a path
 ```
+
 - When importing a package, VirtoLang looks for `__init__.vlang` in the package directory.
 - You can organize code into packages and modules for reuse.
 
 ## 14. Async & Await
+
 VirtoLang supports async/await and running files. Use function call syntax for `run` and `run_async`:
+
 ```vlang
 async def async_hello(name) {
     print("Hello, " + name)
@@ -290,11 +334,13 @@ run("test1.vlang")
 task2 = run_async("test2.vlang")
 await task2
 ```
+
 - `run(filename)` executes another .vlang file synchronously, sharing variables and functions.
 - `run_async(filename)` executes another .vlang file asynchronously and returns a task.
 - Use `await` to wait for async functions or tasks.
 
 ### More Async Examples
+
 ```vlang
 async def slow_add(a, b) {
     await sleep(1)
@@ -307,12 +353,15 @@ print("Result:", result)
 ```
 
 ## 15. Built-in Functions
+
 VirtoLang includes a rich set of built-in functions (see below for a partial list):
+
 - `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `slice`, `random`, `random_choice`, `randint`, `sleep`, `time`, `now`, `strftime`, `argv`, `help`, `set`, `tuple`, `open`, `read`, `write`, `close`, `run`, `run_async`, `async`, `await`, `exit`, `Error`, `square`, `mod`, `is_prime`, `join`, `split`, `strip`, `startswith`, `endswith`, `find`, `replace`, `upper`, `lower`, `capitalize`, `title`, `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isnumeric`, `superscript`, `subscript`, `format`, `fstring`, `time_now`, `time_sleep`, `time_timestamp`, `time_utcnow`
 - Math: `sin`, `cos`, `tan`, `sqrt`, `log`, `exp`, `pow`, `math_pi`, `math_e`
 - HTTP: `http_get`, `http_post`
 
 ### Example: Using Built-ins
+
 ```vlang
 print(len([1,2,3]))
 print(type(123))
@@ -323,9 +372,11 @@ print(is_prime(13))
 ```
 
 ## 16. Error Messages & Debugging
+
 VirtoLang provides clear, user-friendly error messages with code context and suggestions.
 
 ### Example: Invalid Logical Operator
+
 ```vlang
 if (5 not 3) {
     print("TRUE")
@@ -333,18 +384,23 @@ if (5 not 3) {
     print("FALSE")
 }
 ```
+
 **Error Output:**
+
 ```
 SyntaxError: Expected 'in' or 'is' after 'not' in condition. Did you mean 'not in' or 'is not'?
   File "ai.vlang", line 1, col 7
     if (5 not 3){
           ^
 ```
+
 **How to Fix:**
+
 - Use `not in` for membership: `if (5 not in [3]) { ... }`
 - Use `is not` for identity: `if (x is not y) { ... }`
 
 ### Example: Exception Handling
+
 ```vlang
 try {
     raise Error("fail!")
@@ -354,12 +410,15 @@ try {
 ```
 
 ## 17. Example Programs
+
 ### Hello World
+
 ```vlang
 print("Hello, world!")
 ```
 
 ### FizzBuzz
+
 ```vlang
 for (i in range(1, 16)) {
     if (i % 3 == 0 and i % 5 == 0) {
@@ -379,6 +438,7 @@ for (i in range(1, 16)) {
 ## 18. Advanced Usage
 
 ### File I/O
+
 ```vlang
 f = open("test.txt", "w")
 write(f, "Hello!")
@@ -390,6 +450,7 @@ close(f)
 ```
 
 ### Custom Error Classes
+
 ```vlang
 def MyError(msg) {
     Error.__init__(self, msg)
@@ -402,14 +463,19 @@ try {
 ```
 
 ### Using Packages
+
 Organize your code into folders with an `__init__.vlang` file. Import using:
+
 ```vlang
 import mypackage
 ```
+
 ---
 
 ## 19. Speed & Performance
+
 VirtoLang is now highly optimized for speed:
+
 - **Fast tokenization and parsing**: Optimized regex, minimal recursion, efficient AST traversal.
 - **Efficient interpreter dispatch**: Uses fast lookups, caching, and minimal overhead.
 - **Async/await and concurrency**: Leverages Python's asyncio and threading for parallelism.
@@ -422,6 +488,7 @@ VirtoLang is now highly optimized for speed:
 ---
 
 ## 20. Troubleshooting
+
 - **SyntaxError:** Check for missing braces `{}` or parentheses `()`.
 - **RuntimeError:** Check variable names and function calls.
 - **ImportError:** Ensure the file or package exists and is in the correct location.
@@ -432,11 +499,13 @@ VirtoLang is now highly optimized for speed:
 ---
 
 ## 21. CLI
-- ```vlang --version``` | Gets the currently installed VirtoLang version.
-- ```vlang -V``` | Gets the currently installed VirtoLang version.
-- ```vlang -C "print('test')"``` | Runs code directly from the CLI. (Will print "test")
-- ```vlang --code "print('test')"``` | Runs code directly from the CLI. (Will print "test")
-- ```vlang main.vlang```
+
+- `vlang --version` | Gets the currently installed VirtoLang version.
+- `vlang -V` | Gets the currently installed VirtoLang version.
+- `vlang -C "print('test')"` | Runs code directly from the CLI. (Will print "test")
+- `vlang --code "print('test')"` | Runs code directly from the CLI. (Will print "test")
+- `vlang main.vlang`
+
 ---
 
 For more information, see the README or ask for help. Happy coding with VirtoLang!

@@ -8,7 +8,7 @@
 # --------------------
 import re  # Regular expressions for tokenizing code
 import sys  # System functions (e.g., command-line args, exit)
-import os   # File and path operations
+import os  # File and path operations
 import asyncio  # Async/await support
 import time  # Time utilities
 import random  # Random number utilities
@@ -19,6 +19,7 @@ import requests  # HTTP requests (for built-in web functions)
 from datetime import datetime  # Date/time utilities
 
 init(autoreset=True)  # Initialize colorama for colored output
+
 
 # --------------------
 # TOKEN CLASS
@@ -798,28 +799,30 @@ class Interpreter:
             "islower": lambda s: s.islower(),
             "isnumeric": lambda s: s.isnumeric(),
             "superscript": lambda x: (
-                str(x).replace("0", "⁰")
-                       .replace("1", "¹")
-                       .replace("2", "²")
-                       .replace("3", "³")
-                       .replace("4", "⁴")
-                       .replace("5", "⁵")
-                       .replace("6", "⁶")
-                       .replace("7", "⁷")
-                       .replace("8", "⁸")
-                       .replace("9", "⁹")
+                str(x)
+                .replace("0", "⁰")
+                .replace("1", "¹")
+                .replace("2", "²")
+                .replace("3", "³")
+                .replace("4", "⁴")
+                .replace("5", "⁵")
+                .replace("6", "⁶")
+                .replace("7", "⁷")
+                .replace("8", "⁸")
+                .replace("9", "⁹")
             ),
             "subscript": lambda x: (
-                str(x).replace("0", "₀")
-                       .replace("1", "₁")
-                       .replace("2", "₂")
-                       .replace("3", "₃")
-                       .replace("4", "₄")
-                       .replace("5", "₅")
-                       .replace("6", "₆")
-                       .replace("7", "₇")
-                       .replace("8", "₈")
-                       .replace("9", "₉")
+                str(x)
+                .replace("0", "₀")
+                .replace("1", "₁")
+                .replace("2", "₂")
+                .replace("3", "₃")
+                .replace("4", "₄")
+                .replace("5", "₅")
+                .replace("6", "₆")
+                .replace("7", "₇")
+                .replace("8", "₈")
+                .replace("9", "₉")
             ),
             "format": lambda s, *args, **kwargs: s.format(*args, **kwargs),
             "fstring": lambda s, **kwargs: s.format(**kwargs),
