@@ -4,7 +4,7 @@ VirtoLang is a modern, Python-inspired scripting language with curly-brace block
 
 ---
 
-## Key Features (as of June 2025)
+## Key Features (as of v2.2)
 
 - **Python-like syntax**: Indentation-insensitive, curly-brace blocks, dynamic typing, and familiar operators.
 - **Async/await**: Native support for asynchronous functions, tasks, and file execution.

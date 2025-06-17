@@ -1,10 +1,10 @@
-# VirtoLang Language Reference & User Guide
+# VirtoLang Language Reference & User Guide (2.4)
 
 VirtoLang is a modern, Python-inspired scripting language with curly-brace blocks, dynamic typing, async/await, robust error handling, and a massive set of built-in features. It now includes nearly all Python built-ins, advanced modules, and utilities, plus speed optimizations for interpreted code. This guide covers installation, language features, syntax, error handling, advanced usage, and new Pythonic capabilities.
 
 ---
 
-## Key Features (as of June 2025)
+## Key Features (as of v2.4)
 
 - **Python-like syntax**: Indentation-insensitive, curly-brace blocks, dynamic typing, and familiar operators.
 - **Async/await**: Native support for asynchronous functions, tasks, and file execution.
@@ -356,9 +356,23 @@ print("Result:", result)
 
 VirtoLang includes a rich set of built-in functions (see below for a partial list):
 
-- `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `slice`, `random`, `random_choice`, `randint`, `sleep`, `time`, `now`, `strftime`, `argv`, `help`, `set`, `tuple`, `open`, `read`, `write`, `close`, `run`, `run_async`, `async`, `await`, `exit`, `Error`, `square`, `mod`, `is_prime`, `join`, `split`, `strip`, `startswith`, `endswith`, `find`, `replace`, `upper`, `lower`, `capitalize`, `title`, `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isnumeric`, `superscript`, `subscript`, `format`, `fstring`, `time_now`, `time_sleep`, `time_timestamp`, `time_utcnow`
-- Math: `sin`, `cos`, `tan`, `sqrt`, `log`, `exp`, `pow`, `math_pi`, `math_e`
-- HTTP: `http_get`, `http_post`
+- **General:**
+  - `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `slice`, `set`, `tuple`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `open`, `read`, `write`, `close`, `argv`, `help`, `exit`, `Error`
+- **Math:**
+  - `sin`, `cos`, `tan`, `sqrt`, `log`, `exp`, `pow`, `math_pi`, `math_e`, `square`, `mod`, `is_prime`
+- **String:**
+  - `join`, `split`, `strip`, `startswith`, `endswith`, `find`, `replace`, `upper`, `lower`, `capitalize`, `title`, `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isnumeric`, `superscript`, `subscript`, `format`, `fstring`
+- **Random & Time:**
+  - `random`, `random_choice`, `randint`, `sleep`, `time`, `now`, `strftime`, `time_now`, `time_sleep`, `time_timestamp`, `time_utcnow`
+- **Async & Execution:**
+  - `run`, `run_async`, `async`, `await`
+- **HTTP (requests):**
+  - `http_get`, `http_post`, `http_put`, `http_delete`, `http_head`, `http_options`, `http_patch`,
+  - `http_status`, `http_json`, `http_text`, `http_headers`, `http_url`, `http_ok`, `http_raise_for_status`
+- **GUI (tkinter):**
+  - `tk_root`, `tk_label`, `tk_button`, `tk_messagebox`, `tk_set_title`, `tk_mainloop`
+- **Terminal Colors (colorama):**
+  - `colorama_fore`, `colorama_back`, `colorama_style`
 
 ### Example: Using Built-ins
 
@@ -369,6 +383,13 @@ print(str(123))
 print(random())
 print(square(7))
 print(is_prime(13))
+print(http_get("https://example.com"))
+root = tk_root()
+tk_set_title(root, "Hello GUI!")
+label = tk_label(root, "Hello!")
+label.pack()
+tk_mainloop(root)
+print(colorama_fore("red") + "Red text!" + colorama_style("reset_all"))
 ```
 
 ## 16. Error Messages & Debugging
