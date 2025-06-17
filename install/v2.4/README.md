@@ -1,4 +1,4 @@
-# VirtoLang Language Reference & User Guide (2.3)
+# VirtoLang Language Reference & User Guide (2.4)
 
 VirtoLang is a modern, Python-inspired scripting language with curly-brace blocks, dynamic typing, async/await, robust error handling, and a massive set of built-in features. It now includes nearly all Python built-ins, advanced modules, and utilities, plus speed optimizations for interpreted code. This guide covers installation, language features, syntax, error handling, advanced usage, and new Pythonic capabilities.
 
