@@ -1003,7 +1003,9 @@ class Interpreter:
             val = env.get(node[1], builtins.get(node[1], None))
             if val is not None:
                 return val
-            raise VirtoRuntimeError(f"Undefined variable: {node[1]}", filename=self.filename)
+            raise VirtoRuntimeError(
+                f"Undefined variable: {node[1]}", filename=self.filename
+            )
         elif node[0] == "string":
             return node[1]
         elif node[0] == "if":
@@ -1099,9 +1101,13 @@ class Interpreter:
 
                     return await async_func()
                 else:
-                    raise VirtoRuntimeError(f"Unknown function type: {ftype}", filename=self.filename)
+                    raise VirtoRuntimeError(
+                        f"Unknown function type: {ftype}", filename=self.filename
+                    )
             else:
-                raise VirtoRuntimeError(f"Undefined function: {func}", filename=self.filename)
+                raise VirtoRuntimeError(
+                    f"Undefined function: {func}", filename=self.filename
+                )
         elif node[0] == "import":
             module_name = node[1]
             vlang_path = os.environ.get("VLANG_PATH", os.getcwd())
