@@ -1,30 +1,24 @@
-# VirtoLang Language Reference & User Guide (2.4)
+# VirtoLang Language Reference & User Guide (v3)
 
-VirtoLang is a modern, Python-inspired scripting language with curly-brace blocks, dynamic typing, async/await, robust error handling, and a massive set of built-in features. It now includes nearly all Python built-ins, advanced modules, and utilities, plus speed optimizations for interpreted code. This guide covers installation, language features, syntax, error handling, advanced usage, and new Pythonic capabilities.
+VirtoLang v3 focuses on deep Python interoperability, simplification of the built-in surface, and major performance improvements. The language retains VirtoLang's curly-brace block syntax while allowing direct use of Python builtins and any installed Python packages. This guide covers installation, language features, syntax, error handling, migration notes, and examples updated for v3.
 
 ---
 
-## Key Features (as of v2.4)
+## Key Features (v3)
 
-- **Python-like syntax**: Indentation-insensitive, curly-brace blocks, dynamic typing, and familiar operators.
-- **Async/await**: Native support for asynchronous functions, tasks, and file execution.
-- **Robust error handling**: Python-style `try`/`except`/`finally`, custom exceptions, and clear error messages.
-- **Classes and functions**: Define and call functions (sync and async), with support for return values and parameters.
-- **Comprehensions, lambdas, match statements**: (Planned/partial)
-- **Advanced modules**: HTTP requests, file I/O, date/time, random, math, and more.
-- **Import system**: Import other VirtoLang files or packages, with flexible path and package support.
-- **Slicing, sets, tuples, and more**: Pythonic data structures and operations.
-- **Command-line interface**: Run `.vlang` files directly from the terminal.
-- **Optimized interpreter**: Fast tokenization, parsing, and execution, with local variable lookups and minimal overhead.
-- **Extensible**: Easy to add new built-in functions and modules.
-- **Clear, user-friendly error messages**: With code context and suggestions.
+- **Full Python integration:** VirtoLang will fall back to Python builtins (e.g., `len`, `sum`, `open`, `json`) and lets you `import` any installed Python package (for example, `requests`, `numpy`, `pandas`, `tkinter`).
+- **Curly-brace block syntax:** Blocks use `{` and `}`; conditions and loop headers do not use surrounding parentheses. Statements do not require semicolons.
+- **Performance overhaul:** Lexer/parsing optimizations and faster interpreter dispatch for large speed improvements.
+- **Smaller core built-ins:** Many previously-provided language-specific helpers were removed in favor of using Python packages; prefer Python modules for HTTP, GUI, and advanced utilities.
+- **Robust error handling:** `try`/`except`/`finally` remains supported with clear messages and context.
+- **Classes and functions:** Define classes and functions using VirtoLang syntax; Python objects and callables are first-class.
+- **Command-line interface:** Run `.vlang` files directly with the `vlang` CLI.
 
 ---
 
 ## Installation
 
 1. **Download the Installer:**
-
    - Go to the `install` folder in this repository.
    - Choose your desired version (e.g., `v2`).
    - Click on `virtolang-installer.exe`.
@@ -131,12 +125,12 @@ print("Sum:", 2 + 2)
 
 ## 4. Arithmetic & Comparison
 
-Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `%`, `mod`, `pow`, `abs`, etc.:
+Supports `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `%`, `mod`, `pow`, `abs`, etc. Conditions use no surrounding parentheses:
 
 ```vlang
 y = 6
 print(y / 2)  # prints 3.0
-if (y >= 3 and y < 10) {
+if y >= 3 and y < 10 {
     print("In range")
 }
 print(mod(10, 3))  # 1
@@ -145,10 +139,10 @@ print(pow(2, 8))   # 256.0
 
 ## 5. Boolean Logic
 
-Use `and`, `or`, `not`, and boolean literals:
+Use `and`, `or`, `not`, and boolean literals. Conditions do not use parentheses:
 
 ```vlang
-if (true and not false) {
+if true and not false {
     print("Booleans work!")
 }
 ```
@@ -209,7 +203,7 @@ print(dict_values(d))
 
 ## 9. Functions
 
-Define and call functions:
+Define and call functions (no parentheses around headers):
 
 ```vlang
 def greet(name) {
@@ -223,27 +217,23 @@ def add(a, b) {
 print(add(2, 3))
 ```
 
-Supports async functions:
-
-```vlang
-async def foo(x) {
-    print(x)
-}
-```
-
-Return values are optional. Functions can be called before or after their definition.
+Note: v3 does not provide a native `async`/`await` language keyword. For asynchronous programming, import and use Python's `asyncio` and related libraries from VirtoLang.
 
 ## 10. Control Flow
 
-### If / Elif / Else
+### If / Else (no `elif`)
+
+VirtoLang v3 does not include `elif`. Use `else` with a nested `if` for else-if behavior. Conditions do not use parentheses:
 
 ```vlang
-if (x > 0) {
+if x > 0 {
     print("Positive")
-} elif (x == 0) {
-    print("Zero")
 } else {
-    print("Negative")
+    if x == 0 {
+        print("Zero")
+    } else {
+        print("Negative")
+    }
 }
 ```
 
@@ -251,9 +241,11 @@ if (x > 0) {
 
 ### While Loops
 
+Loop headers do not use parentheses:
+
 ```vlang
 i = 0
-while (i < 5) {
+while i < 5 {
     print(i)
     i = i + 1
 }
@@ -261,11 +253,11 @@ while (i < 5) {
 
 ### For Loops
 
-For-each over lists:
+For-each over lists (no parentheses around header):
 
 ```vlang
 items = [1, 2, 3]
-for (item in items) {
+for item in items {
     print(item)
 }
 ```
@@ -317,108 +309,57 @@ import "C:/path/to/file"  # Imports file.vlang from a path
 - When importing a package, VirtoLang looks for `__init__.vlang` in the package directory.
 - You can organize code into packages and modules for reuse.
 
-## 14. Async & Await
+## 14. Async & Concurrency
 
-VirtoLang supports async/await and running files. Use function call syntax for `run` and `run_async`:
-
-```vlang
-async def async_hello(name) {
-    print("Hello, " + name)
-    return 42
-}
-task = async_hello("Virto")
-result = await task
-print(result)
-
-run("test1.vlang")
-task2 = run_async("test2.vlang")
-await task2
-```
-
-- `run(filename)` executes another .vlang file synchronously, sharing variables and functions.
-- `run_async(filename)` executes another .vlang file asynchronously and returns a task.
-- Use `await` to wait for async functions or tasks.
-
-### More Async Examples
+v3 no longer provides language-level `async`/`await` keywords. Use Python's `asyncio` and other concurrency libraries by importing them from VirtoLang. Example (run Python coroutines via `asyncio`):
 
 ```vlang
-async def slow_add(a, b) {
-    await sleep(1)
-    return a + b
-}
-task = slow_add(2, 3)
-print("Waiting...")
-result = await task
-print("Result:", result)
+import asyncio
+
+# create event loop and run coroutine using Python APIs
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+# use Python coroutine objects via imported modules
 ```
 
-## 15. Built-in Functions
+For many advanced async patterns use Python libraries directly.
 
-VirtoLang includes a rich set of built-in functions (see below for a partial list):
+## 15. Built-ins and Python interoperability
 
-- **General:**
-  - `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`, `reverse`, `append`, `pop`, `slice`, `set`, `tuple`, `dict`, `dict_get`, `dict_set`, `dict_keys`, `dict_values`, `open`, `read`, `write`, `close`, `argv`, `help`, `exit`, `Error`
-- **Math:**
-  - `sin`, `cos`, `tan`, `sqrt`, `log`, `exp`, `pow`, `math_pi`, `math_e`, `square`, `mod`, `is_prime`
-- **String:**
-  - `join`, `split`, `strip`, `startswith`, `endswith`, `find`, `replace`, `upper`, `lower`, `capitalize`, `title`, `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isnumeric`, `superscript`, `subscript`, `format`, `fstring`
-- **Random & Time:**
-  - `random`, `random_choice`, `randint`, `sleep`, `time`, `now`, `strftime`, `time_now`, `time_sleep`, `time_timestamp`, `time_utcnow`
-- **Async & Execution:**
-  - `run`, `run_async`, `async`, `await`
-- **HTTP (requests):**
-  - `http_get`, `http_post`, `http_put`, `http_delete`, `http_head`, `http_options`, `http_patch`,
-  - `http_status`, `http_json`, `http_text`, `http_headers`, `http_url`, `http_ok`, `http_raise_for_status`
-- **GUI (tkinter):**
-  - `tk_root`, `tk_label`, `tk_button`, `tk_messagebox`, `tk_set_title`, `tk_mainloop`
-- **Terminal Colors (colorama):**
-  - `colorama_fore`, `colorama_back`, `colorama_style`
+v3 intentionally reduces the number of language-specific built-ins. Many utilities are now provided by Python builtins or installed packages; import them directly from VirtoLang. Examples below use Python modules where appropriate.
 
-### Example: Using Built-ins
+- General helpers: `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`
+- Math and stdlib: use Python modules (`import math`, `import json`, etc.)
+- Random/time: use Python's `random` and `time` modules
+
+Example using Python stdlib and packages:
 
 ```vlang
 print(len([1,2,3]))
-print(type(123))
-print(str(123))
-print(random())
-print(square(7))
-print(is_prime(13))
-print(http_get("https://example.com"))
-root = tk_root()
-tk_set_title(root, "Hello GUI!")
-label = tk_label(root, "Hello!")
-label.pack()
-tk_mainloop(root)
-print(colorama_fore("red") + "Red text!" + colorama_style("reset_all"))
+import math
+print(math.sqrt(16))
+import requests
+resp = requests.get("https://httpbin.org/get")
+print(resp.status_code)
 ```
+
+If a named function is not found in VirtoLang scope, the interpreter will attempt to resolve it via Python builtins.
 
 ## 16. Error Messages & Debugging
 
-VirtoLang provides clear, user-friendly error messages with code context and suggestions.
+VirtoLang provides clear, user-friendly error messages with code context and suggestions. Condition syntax uses no parentheses; examples below show the v3 style.
 
 ### Example: Invalid Logical Operator
 
 ```vlang
-if (5 not 3) {
+if 5 not in [3] {
     print("TRUE")
 } else {
     print("FALSE")
 }
 ```
 
-**Error Output:**
-
-```
-SyntaxError: Expected 'in' or 'is' after 'not' in condition. Did you mean 'not in' or 'is not'?
-  File "ai.vlang", line 1, col 7
-    if (5 not 3){
-          ^
-```
-
-**How to Fix:**
-
-- Use `not in` for membership: `if (5 not in [3]) { ... }`
-- Use `is not` for identity: `if (x is not y) { ... }`
+If you see a syntax error about `not` usage, use `not in` for membership and `is not` for identity.
 
 ### Example: Exception Handling
 
@@ -438,18 +379,22 @@ try {
 print("Hello, world!")
 ```
 
-### FizzBuzz
+### FizzBuzz (v3 block style)
 
 ```vlang
-for (i in range(1, 16)) {
-    if (i % 3 == 0 and i % 5 == 0) {
+for i in range(1, 16) {
+    if i % 3 == 0 and i % 5 == 0 {
         print("FizzBuzz")
-    } elif (i % 3 == 0) {
-        print("Fizz")
-    } elif (i % 5 == 0) {
-        print("Buzz")
     } else {
-        print(i)
+        if i % 3 == 0 {
+            print("Fizz")
+        } else {
+            if i % 5 == 0 {
+                print("Buzz")
+            } else {
+                print(i)
+            }
+        }
     }
 }
 ```
