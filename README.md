@@ -1,10 +1,10 @@
-# VirtoLang Language Reference & User Guide (v3)
+# VirtoLang Language Reference & User Guide (v3.1)
 
-VirtoLang v3 focuses on deep Python interoperability, simplification of the built-in surface, and major performance improvements. The language retains VirtoLang's curly-brace block syntax while allowing direct use of Python builtins and any installed Python packages. This guide covers installation, language features, syntax, error handling, migration notes, and examples updated for v3.
+VirtoLang v3.1 focuses on deep Python interoperability, simplification of the built-in surface, and major performance improvements. The language retains VirtoLang's curly-brace block syntax while allowing direct use of Python builtins and any installed Python packages. This guide covers installation, language features, syntax, error handling, migration notes, and examples updated for v3.1.
 
 ---
 
-## Key Features (v3)
+## Key Features (v3.1)
 
 - **Full Python integration:** VirtoLang will fall back to Python builtins (e.g., `len`, `sum`, `open`, `json`) and lets you `import` any installed Python package (for example, `requests`, `numpy`, `pandas`, `tkinter`).
 - **Curly-brace block syntax:** Blocks use `{` and `}`; conditions and loop headers do not use surrounding parentheses. Statements do not require semicolons.
@@ -217,13 +217,13 @@ def add(a, b) {
 print(add(2, 3))
 ```
 
-Note: v3 does not provide a native `async`/`await` language keyword. For asynchronous programming, import and use Python's `asyncio` and related libraries from VirtoLang.
+Note: v3.1 does not provide a native `async`/`await` language keyword. For asynchronous programming, import and use Python's `asyncio` and related libraries from VirtoLang.
 
 ## 10. Control Flow
 
 ### If / Else (no `elif`)
 
-VirtoLang v3 does not include `elif`. Use `else` with a nested `if` for else-if behavior. Conditions do not use parentheses:
+VirtoLang v3.1 does not include `elif`. Use `else` with a nested `if` for else-if behavior. Conditions do not use parentheses:
 
 ```vlang
 if x > 0 {
@@ -311,7 +311,7 @@ import "C:/path/to/file"  # Imports file.vlang from a path
 
 ## 14. Async & Concurrency
 
-v3 no longer provides language-level `async`/`await` keywords. Use Python's `asyncio` and other concurrency libraries by importing them from VirtoLang. Example (run Python coroutines via `asyncio`):
+v3.1 no longer provides language-level `async`/`await` keywords. Use Python's `asyncio` and other concurrency libraries by importing them from VirtoLang. Example (run Python coroutines via `asyncio`):
 
 ```vlang
 import asyncio
@@ -326,7 +326,7 @@ For many advanced async patterns use Python libraries directly.
 
 ## 15. Built-ins and Python interoperability
 
-v3 intentionally reduces the number of language-specific built-ins. Many utilities are now provided by Python builtins or installed packages; import them directly from VirtoLang. Examples below use Python modules where appropriate.
+v3.1 intentionally reduces the number of language-specific built-ins. Many utilities are now provided by Python builtins or installed packages; import them directly from VirtoLang. Examples below use Python modules where appropriate.
 
 - General helpers: `print`, `len`, `str`, `int`, `type`, `input`, `range`, `sum`, `min`, `max`, `abs`, `sorted`
 - Math and stdlib: use Python modules (`import math`, `import json`, etc.)
@@ -347,7 +347,7 @@ If a named function is not found in VirtoLang scope, the interpreter will attemp
 
 ## 16. Error Messages & Debugging
 
-VirtoLang provides clear, user-friendly error messages with code context and suggestions. Condition syntax uses no parentheses; examples below show the v3 style.
+VirtoLang provides clear, user-friendly error messages with code context and suggestions. Condition syntax uses no parentheses; examples below show the v3.1 style.
 
 ### Example: Invalid Logical Operator
 
@@ -379,7 +379,7 @@ try {
 print("Hello, world!")
 ```
 
-### FizzBuzz (v3 block style)
+### FizzBuzz (v3.1 block style)
 
 ```vlang
 for i in range(1, 16) {
