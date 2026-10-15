@@ -1,7 +1,5 @@
 # VirtoLang v3.1 – Release Notes (major)
 
-Release date: (update as appropriate)
-
 ## Overview
 
 VirtoLang v3.1 is a major release that emphasizes Python interoperability and performance. Instead of maintaining many custom, language-specific built-ins, v3.1 exposes Python builtins and installed packages directly to VirtoLang scripts while keeping the VirtoLang syntax for definitions, blocks, classes, and expressions.
