@@ -1,77 +1,172 @@
 # VirtoLang
 
-VirtoLang is a small interpreted language with Python-style expressions and
-curly-brace blocks. It is implemented in Python and can call Python built-ins,
-import Python modules, and work with Python objects.
-
-This guide describes the syntax currently implemented by the interpreter. It
-does not imply full Python-language compatibility: VirtoLang has its own
-parser, and some Python syntax and features are not available.
-
-## Contents
-
-- [Getting started](#getting-started)
-- [Running a program](#running-a-program)
-- [Language basics](#language-basics)
-- [Strings and formatting](#strings-and-formatting)
-- [Collections and Python objects](#collections-and-python-objects)
-- [Functions and classes](#functions-and-classes)
-- [Control flow](#control-flow)
-- [Exceptions](#exceptions)
-- [Python interoperability](#python-interoperability)
-- [Errors and diagnostics](#errors-and-diagnostics)
-- [Current language boundaries](#current-language-boundaries)
-- [Development and tests](#development-and-tests)
-
-## Getting started
-
-Create a text file named `hello.vlang`:
+VirtoLang is a small, easy-to-read scripting language with Python-style
+expressions and curly-brace blocks. It runs on top of Python, so your programs
+can call any Python built-in, import any installed Python module, and work with
+Python objects directly.
 
 ```vlang
 name = "VirtoLang"
 print(f"Hello, {name}!")
 ```
 
-Run it from a terminal:
+> VirtoLang has its own parser. It looks familiar to Python users, but it is
+> **not** a Python source runner, and some Python syntax is not available. This
+> guide documents what is implemented today.
 
-```powershell
-vlang hello.vlang
-```
+## Contents
 
-If you are running from a source checkout with Python installed:
+- [Installation](#installation)
+- [Running code](#running-code)
+- [The interactive shell (REPL)](#the-interactive-shell-repl)
+- [Language basics](#language-basics)
+- [Strings and formatting](#strings-and-formatting)
+- [Collections](#collections)
+- [Control flow](#control-flow)
+- [Functions](#functions)
+- [Classes](#classes)
+- [Exceptions](#exceptions)
+- [Using Python from VirtoLang](#using-python-from-virtolang)
+- [Built-in functions](#built-in-functions)
+- [Error messages](#error-messages)
+- [Limitations](#limitations)
+- [Release notes](#release-notes)
+
+## Installation
+
+**Windows installer:** run the VirtoLang installer. It adds `vlang.exe` to your
+`PATH`, so `vlang` works from any terminal. Keep `vlang.exe` and its
+`_internal` folder together if you move them.
+
+**From source:** you only need Python 3.10 or newer. Download the project and
+run it with Python:
 
 ```powershell
 python vlang.py hello.vlang
 ```
 
-On Windows, the installer adds `vlang.exe` to `PATH`. The executable and its
-companion `_internal` directory must remain together.
+Check your installation:
 
-## Running a program
-
-The CLI takes one `.vlang` source file:
-
-```text
-vlang path\to\program.vlang
+```powershell
+vlang --version
 ```
 
-The file extension is required. The CLI prints output from calls such as
-`print(...)`; a failing program exits with a non-zero status and writes its
-diagnostic to standard error.
+## Running code
+
+Create a file ending in `.vlang`, for example `hello.vlang`:
+
+```vlang
+print("Hello from VirtoLang!")
+```
+
+Run it:
+
+```powershell
+vlang hello.vlang
+```
+
+### Command-line options
+
+| Command | What it does |
+| --- | --- |
+| `vlang file.vlang` | Run a program. |
+| `vlang` | Run `main.vlang` from the current folder. |
+| `vlang -c file.vlang` | Check the syntax without running the program. |
+| `vlang -e "print(1 + 2)"` | Run code given directly on the command line. |
+| `vlang -r` | Start the [interactive shell](#the-interactive-shell-repl). |
+| `vlang -r file.vlang` | Run a program, then open the shell with its variables and functions available. |
+| `vlang -v` | Show the version. |
+| `vlang -h` | Show help. |
+
+Options can be written in lower or upper case (`-r` or `-R`) or in long form
+(`--repl`, `--check`, `--execute`, `--version`).
+
+If a program fails, the error is written to standard error and `vlang` exits
+with a non-zero status, which makes it easy to use in scripts.
+
+## The interactive shell (REPL)
+
+Start the shell with:
+
+```powershell
+vlang -r
+```
+
+You can type statements and expressions and see the result immediately, like
+Python's interactive shell. Variables, functions and classes you define stay
+available for the rest of the session.
+
+```text
+VirtoLang 4.1.0 interactive shell (Python 3.14.3 on win32)
+Type ":help" for help, or exit() to quit.
+>>> x = 6
+>>> x * 7
+42
+>>> def square(n) {
+...     return n * n
+... }
+>>> square(x)
+36
+>>> "hello".upper()
+'HELLO'
+>>> a = 1; b = 2; a + b
+3
+```
+
+- **Multi-line input.** If a `{`, `(` or `[` is still open, the shell shows the
+  `...` prompt and keeps reading until everything is closed.
+- **Values are echoed** when an expression produces something other than
+  `None`. Assignments, loops and `print(...)` calls do not echo anything.
+- **Errors do not end the session.** The error is shown and you can carry on.
+- **`else`, `elif`, `except` and `finally` must start on the same line as the
+  closing `}`** (for example `} else {`) so the shell knows the statement
+  continues.
+- **Ctrl-C** cancels the line you are typing. **Ctrl-D** (Linux/macOS) or
+  **Ctrl-Z then Enter** (Windows) leaves the shell.
+
+Shell commands start with a colon:
+
+| Command | Meaning |
+| --- | --- |
+| `:help` | Show help. |
+| `:vars` | List everything you have defined. |
+| `:reset` | Clear the session and start fresh. |
+| `:exit` | Leave the shell. `exit()` and `quit()` also work. |
 
 ## Language basics
 
-### Statements, comments, and blocks
+### Statements, semicolons and comments
 
-Statements are separated by whitespace or newlines; semicolon statement
-separators are not supported. Use `#` for a comment:
+Statements are normally written one per line, but whitespace and line breaks
+do not matter to the parser. You can end a statement with a semicolon (`;`) to
+put several statements on one line, or to write an entire program on a single
+line:
 
 ```vlang
-# A simple assignment
-count = 3
+a = 1; b = 2; print(a + b)
 ```
 
-Blocks use braces. Indentation is for readability and does not define blocks:
+Semicolons are optional and can be repeated or left at the end of a line. They
+also work inside blocks:
+
+```vlang
+if a < b { print("a is smaller"); a = b }
+```
+
+Because line breaks do not end statements, use a semicolon if a new statement
+starts with `(`, `[`, `+` or `-` and could be mistaken for a continuation of
+the previous line.
+
+Comments start with `#` and continue to the end of the line:
+
+```vlang
+# This is a comment
+count = 3  # so is this
+```
+
+### Blocks
+
+Blocks are wrapped in braces. Indentation is only for readability:
 
 ```vlang
 if count > 0 {
@@ -79,11 +174,10 @@ if count > 0 {
 }
 ```
 
-### Values and variables
+### Variables and values
 
-Variables are created by assigning to a name. The currently supported literal
-forms include integers, decimal and scientific-notation numbers, strings,
-booleans, `None`, and lists:
+Assign to a name to create a variable. Variables are dynamically typed and can
+be reassigned to a different type.
 
 ```vlang
 whole = 42
@@ -95,51 +189,34 @@ missing = None
 items = [1, 2, 3]
 ```
 
-`true` and `True` both mean `True`; `false` and `False` both mean `False`.
-`none` and `None` both mean `None`.
+`true` / `True`, `false` / `False` and `none` / `None` are all accepted.
+Using a name that has not been defined is a `NameError`.
 
-Variables are dynamically typed and may be reassigned:
-
-```vlang
-value = 10
-value = "ten"
-```
-
-### Operators and expressions
-
-The parser supports these arithmetic operators:
+### Operators
 
 | Operator | Meaning |
 | --- | --- |
-| `+` | Addition or compatible-value concatenation |
-| `-` | Subtraction |
-| `*` | Multiplication |
-| `/` | Division |
+| `+` `-` `*` `/` | Add, subtract, multiply, divide |
+| `//` | Floor division |
+| `%` | Remainder |
+| `**` | Power (`2 ** 10` is `1024`) |
+| `==` `!=` `<` `>` `<=` `>=` | Comparison |
+| `in`, `not in` | Membership test (`3 in [1, 2, 3]`) |
+| `and`, `or`, `not` | Boolean logic (`and` / `or` short-circuit) |
 
-Augmented assignment is supported for `+=`, `-=`, `*=`, `/=`, and `%=`:
+Comparisons can be chained, as in Python: `0 < x < 10`.
+
+Augmented assignment is supported for `+=`, `-=`, `*=`, `/=`, `//=`, `%=` and
+`**=`. Parentheses group expressions:
 
 ```vlang
 total = 10
 total += 5
-```
-
-Comparison operators are `==`, `!=`, `<`, `>`, `<=`, and `>=`. Boolean
-expressions use `and`, `or`, and `not`; `and` and `or` short-circuit:
-
-```vlang
-if total >= 10 and not false {
-    print(total)
-}
-```
-
-Parentheses can group expressions:
-
-```vlang
 result = (2 + 3) * 4
 ```
 
-`+` follows Python's operand rules. For example, adding two strings works, but
-adding a string and a number raises a `TypeError`:
+`+` follows Python's rules: two strings can be joined, but a string and a
+number cannot. Convert the number first:
 
 ```vlang
 label = "Count: " + str(total)
@@ -147,22 +224,17 @@ label = "Count: " + str(total)
 
 ## Strings and formatting
 
-Single- and double-quoted strings support common backslash escapes:
+Strings use single or double quotes and support the usual backslash escapes.
+Raw strings (prefix `r`) keep backslashes as written:
 
 ```vlang
 quoted = "She said, \"hello\""
-lines = "first\nsecond"
-```
-
-Raw strings preserve backslashes:
-
-```vlang
 path = r"C:\new\folder"
-print(path)
 ```
 
-Formatted strings support expressions, conversions, escaped braces, and
-Python's format-spec mini-language:
+Formatted strings (prefix `f`) embed expressions in braces and support
+conversions (`!s`, `!r`, `!a`), Python format specifications, `{name=}` debug
+output, and literal braces written as `{{` and `}}`:
 
 ```vlang
 name = "VirtoLang"
@@ -174,137 +246,79 @@ print(f"Price: ${price:.2f}")
 print(f"Aligned: {price:>{width}.2f}")
 print(f"Debug: {name=}")
 print(f"Representation: {name!r}")
-print(f"Literal braces: {{ and }}")
 ```
 
-Conversions `!s`, `!r`, and `!a` are supported. Format specifications are
-delegated to Python's `format()` implementation, so supported alignment,
-precision, and numeric presentation options follow Python's format rules.
-Nested fields can supply dynamic format values, for example
-`f"{price:{width}.2f}"`.
-
-Raw formatted strings combine raw literal text with evaluated fields:
+Strings are Python strings, so all of Python's string methods are available:
 
 ```vlang
-file_name = "report"
-print(rf"C:\exports\{file_name}.txt")
-```
-
-String literals and string variables can use Python string methods, including
-`.format()`:
-
-```vlang
-print("Price: ${:.2f}".format(price))
 print("  hello  ".strip())
 print("virto".upper())
+print("Price: ${:.2f}".format(price))
 ```
 
-## Collections and Python objects
+Prefix a string with `re` (for example `re"[a-z]+"`) to create a compiled
+regular expression.
+
+## Collections
 
 ### Lists
 
-Lists support indexing, assignment to an index, and Python list methods:
-
 ```vlang
 numbers = [1, 2, 3]
-print(numbers[0])
 numbers.append(4)
 numbers[1] = 20
-print(len(numbers))
-print(sorted(numbers))
+print(numbers[0], len(numbers), sorted(numbers))
 ```
 
-List literals can contain expressions and can be passed to Python functions.
+### Slicing
+
+Strings, lists and tuples can be sliced with `[start:stop:step]`:
+
+```vlang
+letters = ["a", "b", "c", "d", "e"]
+print(letters[1:3])     # ['b', 'c']
+print(letters[::-1])    # reversed
+print("virtolang"[:5])  # virto
+```
 
 ### Dictionaries
 
-Create dictionaries with Python's `dict()` built-in, then access and assign
-entries by key:
-
 ```vlang
-settings = dict()
-settings["theme"] = "dark"
+settings = {"theme": "dark", "size": 12}
+settings["language"] = "en"
 print(settings["theme"])
-print(settings.get("language", "en"))
+print(settings.get("missing", "default"))
+
+for key, value in settings.items() {
+    print(key, value)
+}
 ```
 
-Dictionary literal syntax (`{"key": value}`) is not currently implemented.
-
-### Python objects
-
-Attribute access and indexed access are supported on Python values returned by
-built-ins, imports, and method calls:
+### Tuples
 
 ```vlang
-import math
-print(math.sqrt(81))
+point = (3, 4)
+print(point[0])
 ```
 
-## Functions and classes
-
-### Functions
-
-Define functions with `def`, a comma-separated list of parameter names, and a
-braced body. Calls currently use positional arguments:
-
-```vlang
-def greet(name) {
-    print(f"Hello, {name}!")
-}
-
-def add(left, right) {
-    return left + right
-}
-
-greet("Ada")
-print(add(2, 3))
-```
-
-`return` exits the function and returns its expression's value.
-
-### Classes
-
-Classes use a braced body. Methods take an explicit first parameter, commonly
-named `self`:
-
-```vlang
-class Counter {
-    def __init__(self, start) {
-        self.value = start
-    }
-
-    def increment(self) {
-        self.value += 1
-        return self.value
-    }
-}
-
-counter = Counter(4)
-print(counter.increment())
-```
-
-The language's ordinary class implementation is intentionally lightweight;
-it is not a complete implementation of Python's class and inheritance model.
-Exception subclasses are supported as described below.
+Collections are ordinary Python objects, so every Python method for them is
+available.
 
 ## Control flow
 
-### `if` and `else`
-
-Conditions do not require parentheses. There is no `elif` keyword; nest an
-`if` inside `else` when another condition is needed:
+### `if`, `elif`, `else`
 
 ```vlang
 if score >= 90 {
     print("A")
+} elif score >= 80 {
+    print("B")
 } else {
-    if score >= 80 {
-        print("B")
-    } else {
-        print("Keep practicing")
-    }
+    print("Keep practicing")
 }
 ```
+
+Conditions do not need parentheses. `else if` also works.
 
 ### `while`
 
@@ -318,25 +332,107 @@ while count < 3 {
 
 ### `for`
 
-`for` iterates over an expression that produces an iterable:
+`for` loops over anything iterable. Use two or more names to unpack each item:
 
 ```vlang
-for item in ["red", "green", "blue"] {
-    print(item)
+for color in ["red", "green", "blue"] {
+    print(color)
 }
 
-for number in range(3) {
-    print(number)
+for index, color in enumerate(["red", "green"]) {
+    print(index, color)
 }
 ```
 
-`break` and `continue` statements are not currently implemented.
+### `break` and `continue`
+
+```vlang
+for n in range(10) {
+    if n % 2 == 0 { continue }
+    if n > 7 { break }
+    print(n)
+}
+```
+
+## Functions
+
+Define functions with `def`. Parameters can have default values, and arguments
+can be passed by position or by name:
+
+```vlang
+def greet(name, punctuation="!") {
+    return f"Hello, {name}{punctuation}"
+}
+
+print(greet("Ada"))
+print(greet("Ada", punctuation="?"))
+```
+
+- `return` ends the function and gives back a value; a bare `return;` returns
+  `None`. A function without `return` gives back the value of its last
+  statement.
+- Functions can call themselves (recursion) and can be defined inside other
+  functions. Inner functions can read the variables of the function around
+  them.
+- Variables assigned inside a function are local to that function.
+- VirtoLang functions can be passed to Python functions, for example
+  `sorted(words, key=length_of)`.
+
+```vlang
+def factorial(n) {
+    if n <= 1 { return 1 }
+    return n * factorial(n - 1)
+}
+
+print(factorial(10))
+```
+
+## Classes
+
+```vlang
+class Counter {
+    def __init__(self, start) {
+        self.value = start
+    }
+
+    def increment(self) {
+        self.value += 1
+        return self.value
+    }
+
+    def __str__(self) {
+        return f"Counter({self.value})"
+    }
+}
+
+counter = Counter(4)
+print(counter.increment())  # 5
+print(counter)              # Counter(5)
+```
+
+Methods take an explicit first parameter, conventionally named `self`.
+`__init__` runs when an object is created, and `__str__` / `__repr__` control
+how it is printed.
+
+Classes can inherit from other VirtoLang classes:
+
+```vlang
+class Animal {
+    def __init__(self, name) { self.name = name }
+    def speak(self) { return "..." }
+}
+
+class Dog(Animal) {
+    def speak(self) { return f"{self.name} says woof" }
+}
+
+print(Dog("Rex").speak())
+```
 
 ## Exceptions
 
-VirtoLang supports `try`, typed and bare `except` handlers, and `finally`.
-Handlers are checked in order, and `finally` runs whether the try body
-succeeds, raises an unhandled exception, or returns from a function:
+`try` runs code that might fail. Matching `except` blocks handle the error and
+`finally` always runs afterwards:
 
 ```vlang
 try {
@@ -344,30 +440,17 @@ try {
 } except ZeroDivisionError as error {
     print("The divisor cannot be zero:", error)
 } except Error as error {
-    print("Other error:", error)
+    print("Something else went wrong:", error)
 } finally {
     print("Finished")
 }
 ```
 
-A bare handler catches any regular exception:
+A bare `except { ... }` catches any regular error. `Error` is VirtoLang's name
+for Python's base `Exception`, and Python's built-in exceptions such as
+`ValueError` and `KeyError` can be used by name.
 
-```vlang
-try {
-    raise Error("Something went wrong")
-} except {
-    print("An error was caught")
-}
-```
-
-`Error` is an alias for Python's base `Exception` class. Raise an exception
-instance:
-
-```vlang
-raise Error("Invalid configuration")
-```
-
-Custom exceptions can subclass `Error`:
+Raise an error with `raise`, and create your own by subclassing `Error`:
 
 ```vlang
 class ValidationError(Error) {
@@ -379,98 +462,212 @@ class ValidationError(Error) {
 try {
     raise ValidationError("A name is required")
 } except ValidationError as error {
-    print(error)
+    print(error.message)
 }
 ```
 
-Python's built-in exception classes can also be used in `except` clauses, such
-as `ValueError`, `TypeError`, and `ZeroDivisionError`.
+## Using Python from VirtoLang
 
-## Python interoperability
-
-VirtoLang can call Python built-ins and import Python modules available to the
-runtime. Use `import name` or `from module import name`:
+All of Python's built-in functions (`print`, `len`, `range`, `sorted`, `open`,
+`enumerate`...) are available. Import modules with `import` and `from ... import`:
 
 ```vlang
 import math
-from time import time
+import os.path
+from time import time as now
 
-print(len([1, 2, 3]))
 print(math.sqrt(16))
-print(time())
+print(os.path.basename("/tmp/report.txt"))
+print(now())
+
+from collections import Counter as WordCounter, deque
 ```
 
-Third-party packages must be installed in the Python environment used by
-VirtoLang. An onedir executable includes its Python runtime; package
-availability depends on how that executable was built.
+Third-party packages work too, as long as they are installed in the Python
+environment VirtoLang is running with. The Windows installer bundles its own
+Python runtime, so only the modules included with it are available there.
 
-VirtoLang is not a Python source runner. The parser implements a subset of
-Python-like expressions and control flow; imported Python functions and objects
-are interoperable, but Python syntax that the VirtoLang parser does not
-recognize cannot be placed directly in a `.vlang` file.
+## Built-in functions
 
-## Errors and diagnostics
+On top of Python's own built-ins, VirtoLang ships ready-to-use functions for
+jobs that normally take a lot of code. They need no `import`. Type
+`list_builtins()` in the shell to see every name.
 
-When a `.vlang` program fails in the CLI, VirtoLang reports the source file,
-line and column, a source excerpt with a caret, the error type and message, and
-a suggested fix for common problems. It suppresses Python tracebacks from the
-interpreter internals.
+### Files and folders
 
-For example, an incompatible string operation:
+| Function | What it does |
+| --- | --- |
+| `read_file(path)` / `read_lines(path)` | Read a text file as one string / a list of lines. |
+| `write_file(path, text)` / `append_file(path, text)` | Replace / add to a file (parent folders are created). |
+| `read_bytes(path)` / `write_bytes(path, data)` | Binary file access. |
+| `file_exists(path)`, `is_file(path)`, `is_dir(path)` | Check what a path is. |
+| `list_dir(path=".")` | Sorted names inside a folder. |
+| `make_dir(path)` | Create a folder (and parents). |
+| `delete_file(path)` | Delete a file, or a folder and its contents. |
+| `copy_file(src, dst)`, `move_file(src, dst)` | Copy, move or rename. |
+| `join_path(...)`, `cwd()` | Build a path, get the current folder. |
+
+### JSON and CSV
+
+| Function | What it does |
+| --- | --- |
+| `json_parse(text)` / `json_stringify(value, indent=None)` | Convert between JSON text and values. |
+| `read_json(path)` / `write_json(path, value)` | Load or save a JSON file. |
+| `read_csv(path)` | Read a CSV with a header row into a list of dicts. |
+| `write_csv(path, rows)` | Write a list of dicts as a CSV. |
+| `pretty(value)` | Indented text for dicts and lists. |
 
 ```vlang
-print("Count: " + 3)
+write_json("config.json", {"theme": "dark", "size": 12})
+config = read_json("config.json")
+print(config["theme"])
 ```
 
-is reported as a `TypeError` with a suggestion to convert the value using
-`str(...)` or interpolate it in an f-string.
+### HTTP requests
 
-The caret identifies the lexer token or enclosing statement associated with
-the error. For runtime errors, it may point to the start of the statement
-rather than the exact operator or subexpression.
+`http_get`, `http_post`, `http_put`, `http_delete` and the general
+`http_request(method, url, ...)` return a response with `status`, `ok`, `text`,
+`content` (bytes), `headers` and `url`, plus `.json()` and `.raise_for_status()`.
 
-Suggestions are best-effort hints for common errors; they do not replace
-reading the message and checking the source code.
+```vlang
+response = http_get("https://api.github.com/repos/python/cpython")
+if response.ok {
+    print(response.json()["stargazers_count"])
+}
 
-## Current language boundaries
-
-VirtoLang is actively evolving. The following are examples of Python features
-that are not currently part of the language syntax:
-
-- `elif`, `break`, and `continue`
-- Dictionary literals
-- Keyword arguments in VirtoLang-defined function calls
-- Python compound syntax such as `with`, `lambda`, comprehensions, and
-  `async`/`await`
-- Full Python class inheritance and metaclass behavior
-
-The exact supported syntax is defined by the parser and may change between
-releases.
-
-## Development and tests
-
-Run the regression suite from the project root:
-
-```powershell
-python -m unittest discover -s tests -v
+http_get("https://example.com/search", params={"q": "virtolang"})
+http_post("https://example.com/api", json={"name": "Ada"})
+http_post("https://example.com/form", data={"user": "ada"})
+download("https://example.com/file.zip", "file.zip")
 ```
 
-On Windows, the repository's virtual environment can be used directly:
+Options: `headers={...}`, `params={...}` (query string), `data=` (form dict, text
+or bytes), `json=` and `timeout=` (seconds). Error statuses such as 404 do not
+raise; check `response.ok`. Connection failures and timeouts do raise.
+`url_encode(...)` and `url_decode(...)` help build addresses by hand.
 
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+### Web server
+
+`serve(routes, port=8000)` starts a web server and runs until you press Ctrl-C.
+`routes` is a dict mapping paths to a reply or a function, or a single function
+that handles every request.
+
+```vlang
+def hello(request) {
+    return {"hello": request.query.get("name", "world")}
+}
+
+def save(request) {
+    data = request.json()
+    return ({"saved": data}, 201)
+}
+
+serve({
+    "/": "<h1>Welcome to VirtoLang</h1>",
+    "/hello": hello,
+    "POST /save": save,
+    "*": ("Page not found", 404)
+}, port=8080)
 ```
 
-To build the Windows onedir executable, install PyInstaller in the selected
-Python environment and run:
+- A key is a path (`"/about"`), a method and path (`"POST /save"`), or `"*"` as
+  the fallback.
+- A handler receives a request with `method`, `path`, `query` (dict), `headers`,
+  `body` (text), `content` (bytes), `client`, and the methods `.json()` and
+  `.form()`.
+- A reply can be text (sent as HTML if it starts with `<`), a dict or list
+  (sent as JSON), bytes, or a tuple `(body, status)` /
+  `(body, status, headers)`.
+- It listens on `127.0.0.1` (this computer only) by default. Use
+  `host="0.0.0.0"` to allow other devices, only on networks you trust.
+- Requests are handled one at a time.
 
-```powershell
-python buildscript.py
+### Windows and dialogs (GUI)
+
+`window(title, width, height)` creates a desktop window. Add controls from top
+to bottom, then call `show()`. Each control returns an object with `get()` and
+`set(value)`.
+
+```vlang
+win = window("Greeter", 320, 200)
+name = win.entry()
+output = win.label("")
+
+def greet() {
+    output.set("Hello, " + name.get() + "!")
+}
+
+win.button("Greet", greet)
+win.show()
 ```
 
-The executable is produced in `dist\vlang\`; keep the executable and its
-`_internal` directory together when distributing it.
+Controls: `label(text)`, `button(text, function)`, `entry(text)`,
+`textbox(text)`, `checkbox(text, checked)`, `dropdown(options)` and
+`slider(low, high)`. Windows also have `after(ms, function)` for timers,
+`title(text)` and `close()`. Controls have `disable()` and `enable()`.
+
+Ready-made dialogs: `message_box(text)`, `ask_yes_no(question)` (True/False),
+`ask_text(prompt)` (text or `None`), `choose_file()`, `choose_save_file()` and
+`choose_folder()` (a path or `None`).
+
+The GUI uses Python's `tkinter`, which is included with most Python installs.
+
+### Time, random, hashing and encoding
+
+| Function | What it does |
+| --- | --- |
+| `sleep(seconds)` | Pause the program. |
+| `now(fmt="%Y-%m-%d %H:%M:%S")`, `today()` | Current local time / date as text. |
+| `timestamp()`, `format_time(seconds, fmt)` | Unix time and formatting it. |
+| `random_int(low, high)` | Random whole number (both ends included). |
+| `random_float()`, `random_choice(items)`, `shuffle(items)` | Random helpers. |
+| `uuid()` | A new unique ID. |
+| `sha256(value)`, `md5(value)` | Hash text or bytes as hex. |
+| `base64_encode(value)` / `base64_decode(text)` | Base64 conversion. |
+
+### System and utilities
+
+| Function | What it does |
+| --- | --- |
+| `run(command)` | Run a command; returns `output`, `error`, `code` and `ok`. |
+| `env(name, default=None)` | Read an environment variable. |
+| `args()` | Command-line arguments given to VirtoLang. |
+| `open_url(url)` | Open a page in the default browser. |
+| `clamp(value, low, high)` | Keep a number within limits. |
+| `to_int(value, default=0)`, `to_float(value, default=0.0)` | Convert without errors. |
+| `deep_copy(value)` | Fully independent copy of a list or dict. |
+| `list_builtins()` | List all of the functions on this page. |
+
+`run("...")` executes through the system shell, so only pass it text you trust.
+
+## Error messages
+
+When a program fails, VirtoLang shows where the problem is, what went wrong,
+and a hint for common mistakes:
+
+```text
+  File "demo.vlang", line 2, column 7
+  2 | print("Count: " + 3)
+    |       ^
+VirtoLang TypeError: can only concatenate str (not "int") to str
+Suggestion: Convert the non-string value with str(value), or use an f-string such as f"{value}".
+```
+
+For runtime errors, the caret marks the start of the statement or expression
+that failed, which is not always the exact operator.
+
+## Limitations
+
+VirtoLang is still growing. These Python features are not available yet:
+
+- `lambda`, list/dict comprehensions, `with`, `async` / `await`, decorators
+- `is` / `is not`, set literals, and unpacking assignments such as `a, b = b, a`
+- `global` / `nonlocal` (a function cannot reassign a variable of an outer
+  scope)
+- `super()` and keyword-only / variable-length parameters (`*args`, `**kwargs`)
+- Multi-line (triple-quoted) strings
 
 ## Release notes
 
-See [release notes.md](./release%20notes.md) for recent user-facing changes.
+See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for the list of changes in each
+release.
