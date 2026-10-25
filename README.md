@@ -24,6 +24,7 @@ print(f"Hello, {name}!")
 - [Collections](#collections)
 - [Control flow](#control-flow)
 - [Functions](#functions)
+- [Generators, async and unpacking](#generators-async-and-unpacking)
 - [Classes](#classes)
 - [Exceptions](#exceptions)
 - [Using Python from VirtoLang](#using-python-from-virtolang)
@@ -97,7 +98,7 @@ Python's interactive shell. Variables, functions and classes you define stay
 available for the rest of the session.
 
 ```text
-VirtoLang 4.1.0 interactive shell (Python 3.14.3 on win32)
+VirtoLang 5.0.0 interactive shell (Python 3.14.3 on win32)
 Type ":help" for help, or exit() to quit.
 >>> x = 6
 >>> x * 7
@@ -137,25 +138,20 @@ Shell commands start with a colon:
 
 ### Statements, semicolons and comments
 
-Statements are normally written one per line, but whitespace and line breaks
-do not matter to the parser. You can end a statement with a semicolon (`;`) to
-put several statements on one line, or to write an entire program on a single
-line:
+Statements end at a newline. You can use a semicolon (`;`) to put several
+statements on one line, or to write an entire program on a single line:
 
 ```vlang
 a = 1; b = 2; print(a + b)
 ```
 
-Semicolons are optional and can be repeated or left at the end of a line. They
-also work inside blocks:
+Semicolons can be repeated or left at the end of a line. Newlines inside
+parentheses and square brackets continue an expression; multiline dictionaries
+are also supported. Newlines separate statements inside blocks:
 
 ```vlang
 if a < b { print("a is smaller"); a = b }
 ```
-
-Because line breaks do not end statements, use a semicolon if a new statement
-starts with `(`, `[`, `+` or `-` and could be mistaken for a continuation of
-the previous line.
 
 Comments start with `#` and continue to the end of the line:
 
@@ -201,10 +197,19 @@ Using a name that has not been defined is a `NameError`.
 | `%` | Remainder |
 | `**` | Power (`2 ** 10` is `1024`) |
 | `==` `!=` `<` `>` `<=` `>=` | Comparison |
+| `is`, `is not` | Identity (whether two names refer to the same object) |
 | `in`, `not in` | Membership test (`3 in [1, 2, 3]`) |
 | `and`, `or`, `not` | Boolean logic (`and` / `or` short-circuit) |
 
 Comparisons can be chained, as in Python: `0 < x < 10`.
+Use `is None` when checking for an absent value; use `==` for ordinary value
+comparison.
+
+Conditional expressions choose one of two values:
+
+```vlang
+label = "adult" if age >= 18 else "child"
+```
 
 Augmented assignment is supported for `+=`, `-=`, `*=`, `/=`, `//=`, `%=` and
 `**=`. Parentheses group expressions:
@@ -213,6 +218,14 @@ Augmented assignment is supported for `+=`, `-=`, `*=`, `/=`, `//=`, `%=` and
 total = 10
 total += 5
 result = (2 + 3) * 4
+```
+
+Tuple unpacking assigns several names in one statement. The number of values
+must match the number of names:
+
+```vlang
+first, second = "red", "blue";
+(width, height) = (800, 600)
 ```
 
 `+` follows Python's rules: two strings can be joined, but a string and a
@@ -259,6 +272,20 @@ print("Price: ${:.2f}".format(price))
 Prefix a string with `re` (for example `re"[a-z]+"`) to create a compiled
 regular expression.
 
+Triple-quoted strings (`"""..."""` or `'''...'''`) can span several lines and
+may contain quotes. They also work as f-strings (`f"""..."""`):
+
+```vlang
+poem = """Roses are red,
+Violets are "blue"."""
+
+name = "Ada"
+letter = f"""Dear {name},
+Welcome to VirtoLang!"""
+print(poem)
+print(letter)
+```
+
 ## Collections
 
 ### Lists
@@ -292,6 +319,29 @@ print(settings.get("missing", "default"))
 for key, value in settings.items() {
     print(key, value)
 }
+```
+
+### Sets
+
+Set literals hold unique values. Use `set()` to create an empty set; `{}` is an
+empty dictionary:
+
+```vlang
+unique = {1, 2, 2, 3}
+print(unique)  # {1, 2, 3}
+empty_set = set()
+```
+
+### Comprehensions
+
+List, set, and dictionary comprehensions build collections from an iterable.
+They support nested `for` clauses and `if` filters. Their loop variables are
+local to the comprehension and do not overwrite surrounding variables:
+
+```vlang
+squares = [n * n for n in range(10) if n % 2 == 0]
+coordinates = {(x, y) for x in [1, 2] for y in [3, 4]}
+by_name = {name: len(name) for name in ["Ada", "Grace"]}
 ```
 
 ### Tuples
@@ -370,13 +420,21 @@ print(greet("Ada", punctuation="?"))
 
 - `return` ends the function and gives back a value; a bare `return;` returns
   `None`. A function without `return` gives back the value of its last
-  statement.
+  statement. Comma-separated return values form a tuple.
 - Functions can call themselves (recursion) and can be defined inside other
   functions. Inner functions can read the variables of the function around
   them.
 - Variables assigned inside a function are local to that function.
 - VirtoLang functions can be passed to Python functions, for example
   `sorted(words, key=length_of)`.
+- Short functions can be written with `lambda`. Lambdas accept positional
+  parameters and capture their surrounding scope:
+
+```vlang
+double = lambda value: value * 2
+print(double(21))
+print(sorted([3, 1, 2], key=lambda value: -value))
+```
 
 ```vlang
 def factorial(n) {
@@ -385,6 +443,230 @@ def factorial(n) {
 }
 
 print(factorial(10))
+```
+
+### Variable-length and keyword-only parameters
+
+`*args` collects extra positional arguments into a tuple and `**kwargs`
+collects extra named arguments into a dictionary. Parameters after `*` (or
+after `*args`) can only be passed by name:
+
+```vlang
+def report(title, *values, sep=", ", **options) {
+    print(title + ": " + sep.join(str(v) for v in values), options)
+}
+
+report("Scores", 90, 85, 77, sep=" | ", verbose=true)
+
+def connect(host, *, port, secure=false) {
+    return f"{host}:{port} secure={secure}"
+}
+
+print(connect("localhost", port=8080))
+```
+
+Parameters before `/` are positional-only: callers must pass them by position.
+Parameters after `/` can be passed by position or name:
+
+```vlang
+def divide(numerator, denominator, /, precision=2) {
+    return round(numerator / denominator, precision)
+}
+
+print(divide(10, 3, precision=3))
+```
+
+Use `*` and `**` when calling to spread a list or dictionary into arguments.
+The same `*` / `**` spread works inside list, tuple, set and dictionary
+literals:
+
+```vlang
+numbers = [1, 2, 3]
+options = {"sep": "-"}
+print(*numbers, **options)
+
+combined = [0, *numbers, 4]
+defaults = {"color": "red", "size": 1}
+custom = {**defaults, "size": 3}
+```
+
+### Changing outer variables: `global` and `nonlocal`
+
+Assigning inside a function normally creates a local variable. Declare a name
+`global` to change the program-level variable, or `nonlocal` to change a
+variable of the enclosing function:
+
+```vlang
+total = 0
+
+def add(amount) {
+    global total
+    total += amount
+}
+
+def make_counter() {
+    count = 0
+    def step() {
+        nonlocal count
+        count += 1
+        return count
+    }
+    return step
+}
+
+add(5)
+counter = make_counter()
+counter()
+print(total, counter())
+```
+
+### Decorators
+
+A decorator is a function that takes a function and returns a replacement.
+Put `@decorator` on the line above a `def` or `class`. Decorators can take
+arguments and be stacked; the one nearest the `def` is applied first:
+
+```vlang
+def shout(function) {
+    def wrapper(*args, **kwargs) {
+        return str(function(*args, **kwargs)).upper() + "!"
+    }
+    return wrapper
+}
+
+def repeat(times) {
+    def decorator(function) {
+        def wrapper(*args) {
+            return [function(*args) for _ in range(times)]
+        }
+        return wrapper
+    }
+    return decorator
+}
+
+@shout
+def hello(name) { return "hello " + name }
+
+@repeat(2)
+def ping() { return "ping" }
+
+print(hello("ada"), ping())
+```
+
+Ready-made decorators: `@memoize` (cache results), `@timed` (print how long a
+call took) and `@retry(times)` (try again if the function raises).
+
+## Generators, async and unpacking
+
+### Generator expressions and `yield`
+
+A generator expression is a lazy comprehension written with parentheses. It
+produces items only as they are needed, so it is ideal for large ranges and
+for passing straight to functions such as `sum`, `any` or `max`:
+
+```vlang
+squares = (n * n for n in range(1000000))
+print(next(squares), next(squares))
+print(sum(n for n in range(10) if n % 2 == 0))
+```
+
+A function that uses `yield` becomes a generator. Each call to `next()` (or
+each step of a `for` loop) runs the body up to the next `yield`. Use
+`yield from` to hand over to another iterable, and `x = yield value` to
+receive values sent with `.send()`:
+
+```vlang
+def countdown(start) {
+    while start > 0 {
+        yield start
+        start -= 1
+    }
+}
+
+def launch() {
+    yield from countdown(3)
+    yield "liftoff"
+}
+
+print(list(launch()))
+```
+
+### `async` and `await`
+
+`async def` defines a function that can pause at `await` while other tasks
+run. Calling it returns an awaitable; use `await` inside another `async def`,
+or at the top level of a program. Helpers: `async_run(coroutine)`,
+`async_sleep(seconds)`, `gather(...)` (run several at once) and
+`create_task(coroutine)` (start in the background):
+
+```vlang
+async def fetch(name, delay) {
+    await async_sleep(delay)
+    return f"{name} done"
+}
+
+async def main() {
+    results = await gather(fetch("a", 0.2), fetch("b", 0.1))
+    print(results)
+}
+
+async_run(main())
+```
+
+`async for` and `async with` work with objects that define `__aiter__` /
+`__anext__` and `__aenter__` / `__aexit__`. Async generator functions may
+combine `await` with `yield` and produce an asynchronous iterator:
+
+```vlang
+async def pages(count) {
+    for page in range(count) {
+        await async_sleep(0)
+        yield page
+    }
+}
+
+async def collect_pages() {
+    result = []
+    async for page in pages(3) {
+        result.append(page)
+    }
+    return result
+}
+
+print(async_run(collect_pages()))
+```
+
+Use `await generator.asend(value)` to send a value, `await generator.athrow(error)`
+to raise an exception at its current suspension point, or
+`await generator.aclose()` to finish it and run pending `finally` blocks.
+`yield from` is not allowed in an async generator.
+
+### Starred unpacking
+
+`*name` on the left of an assignment collects the leftover values into a list:
+
+```vlang
+first, *rest = [1, 2, 3, 4];
+*head, last = [1, 2, 3];
+a, *middle, b = [1, 2, 3, 4, 5];
+print(first, rest, head, last, a, middle, b)
+```
+
+Newlines end statements, so starred unpacking can start on its own line
+without an extra semicolon.
+
+### More small statements
+
+- `pass` does nothing (an explicit empty body).
+- `assert condition, "message"` raises `AssertionError` when false.
+- `del items[0]`, `del name`, `del obj.attr` remove entries or variables.
+- `name := value` assigns inside an expression: `if (n := len(items)) > 3 { ... }`.
+
+```vlang
+items = [5, 6, 7]
+assert len(items) == 3, "expected three items"
+del items[0]
+if (n := len(items)) > 1 { print("more than one:", n) }
 ```
 
 ## Classes
@@ -429,6 +711,48 @@ class Dog(Animal) {
 print(Dog("Rex").speak())
 ```
 
+Use `super()` inside an instance method to call the next implementation in
+the base-class lookup order. VirtoLang methods also support Python's
+`@property`, `@property.setter`, and `@staticmethod` descriptors:
+
+```vlang
+class Animal {
+    def __init__(self, name) { self._name = name }
+    @property
+    def name(self) { return self._name }
+    @name.setter
+    def name(self, value) { self._name = value }
+    @staticmethod
+    def kind() { return "animal" }
+}
+
+class Dog(Animal) {
+    def speak(self) { return super().name + " says woof" }
+}
+
+dog = Dog("Rex")
+dog.name = "Fido"
+print(dog.speak(), Dog.kind())
+```
+
+### Statement boundaries
+
+A newline ends a statement, so statements no longer need semicolons. Use
+semicolons when placing multiple statements on one line. Newlines inside
+parentheses and square brackets are treated as expression continuations:
+
+```vlang
+total = (
+    10
+    + 5
+)
+items = [
+    "first",
+    "second",
+]
+print(total, items)
+```
+
 ## Exceptions
 
 `try` runs code that might fail. Matching `except` blocks handle the error and
@@ -449,6 +773,20 @@ try {
 A bare `except { ... }` catches any regular error. `Error` is VirtoLang's name
 for Python's base `Exception`, and Python's built-in exceptions such as
 `ValueError` and `KeyError` can be used by name.
+
+### Managing resources
+
+Use `with` to ensure a resource is released even if the block raises an error.
+The value after `as` is available inside the block:
+
+```vlang
+with open("notes.txt", "w") as file {
+    file.write("Saved safely")
+}
+```
+
+VirtoLang classes can also act as context managers by implementing
+`__enter__` and `__exit__`.
 
 Raise an error with `raise`, and create your own by subclassing `Error`:
 
@@ -638,6 +976,18 @@ The GUI uses Python's `tkinter`, which is included with most Python installs.
 | `deep_copy(value)` | Fully independent copy of a list or dict. |
 | `list_builtins()` | List all of the functions on this page. |
 
+### Async helpers and decorators
+
+| Function | What it does |
+| --- | --- |
+| `async_run(coroutine)` | Run an `async def` call to completion; returns its result. |
+| `await async_sleep(seconds)` | Pause the current task without blocking others. |
+| `await gather(a(), b())` | Run several async calls together; returns a list of results. |
+| `create_task(coroutine)` | Start an async call in the background. |
+| `@memoize` | Decorator: cache results for repeated arguments. |
+| `@timed` | Decorator: print how long each call takes. |
+| `@retry(times, delay=0)` | Decorator: call again if the function raises. |
+
 `run("...")` executes through the system shell, so only pass it text you trust.
 
 ## Error messages
@@ -658,14 +1008,10 @@ that failed, which is not always the exact operator.
 
 ## Limitations
 
-VirtoLang is still growing. These Python features are not available yet:
-
-- `lambda`, list/dict comprehensions, `with`, `async` / `await`, decorators
-- `is` / `is not`, set literals, and unpacking assignments such as `a, b = b, a`
-- `global` / `nonlocal` (a function cannot reassign a variable of an outer
-  scope)
-- `super()` and keyword-only / variable-length parameters (`*args`, `**kwargs`)
-- Multi-line (triple-quoted) strings
+VirtoLang uses braces for code blocks rather than Python's indentation-based
+blocks. Positional-only parameters, `super()`, property/static method
+descriptors, async generators and logical newline statement boundaries are
+supported.
 
 ## Release notes
 
