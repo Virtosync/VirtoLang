@@ -98,7 +98,7 @@ Python's interactive shell. Variables, functions and classes you define stay
 available for the rest of the session.
 
 ```text
-VirtoLang 5.0.0 interactive shell (Python 3.14.3 on win32)
+VirtoLang 5.1.0 interactive shell (Python 3.14.3 on win32)
 Type ":help" for help, or exit() to quit.
 >>> x = 6
 >>> x * 7
@@ -989,6 +989,79 @@ The GUI uses Python's `tkinter`, which is included with most Python installs.
 | `@retry(times, delay=0)` | Decorator: call again if the function raises. |
 
 `run("...")` executes through the system shell, so only pass it text you trust.
+
+### Lists, dictionaries and functional helpers
+
+| Function | What it does |
+| --- | --- |
+| `first(items, default)`, `last(items, default)`, `take(items, n)`, `drop(items, n)` | Pick items from the ends. |
+| `chunk(items, size)`, `flatten(items, depth=1)`, `flat_map(fn, items)` | Reshape lists (`depth=-1` flattens fully). |
+| `unique(items)`, `compact(items)`, `reverse(items)`, `rotate(items, n)`, `transpose(rows)`, `repeat(value, n)` | Tidy and rearrange. |
+| `group_by(items, fn)`, `count_by(items, fn)`, `partition(items, fn)`, `counter(items)`, `most_common(items, n)` | Group and count. |
+| `pluck(items, key)`, `sort_by(items, fn)`, `min_by`, `max_by`, `sum_by` | Work with records. |
+| `find(items, fn)`, `find_index`, `every`, `some`, `count_if`, `index_of` | Search. |
+| `reduce(fn, items, start)`, `accumulate(items)`, `product(items)`, `pairwise(items)`, `sliding_window(items, n)` | Fold and walk lists. |
+| `union`, `intersection`, `difference`, `sample(items, n)`, `zip_dict(keys, values)` | Set-style helpers. |
+| `merge(a, b)`, `deep_merge(a, b)`, `pick(d, keys)`, `omit(d, keys)`, `invert(d)`, `map_values(d, fn)`, `map_keys(d, fn)`, `filter_dict(d, fn)` | Dictionary helpers. |
+| `get_path(data, "a.b.0")`, `set_path(data, "a.b", value)` | Read/write nested data. |
+| `compose(f, g)`, `pipe(value, f, g)`, `partial(fn, ...)`, `once(fn)`, `identity`, `constant`, `noop`, `tap`, `default(value, fallback)` | Functional tools. |
+| `measure(fn)`, `benchmark(fn, runs)`, `stopwatch()` | Timing. |
+| `parallel_map(fn, items, workers)`, `run_in_thread(fn)`, `every_seconds(n, fn, times)` | Concurrency and scheduling. |
+| `type_name`, `is_number`, `is_string`, `is_list`, `is_dict`, `is_none`, `is_empty`, `is_numeric_string` | Type checks. |
+
+### Text and regular expressions
+
+| Function | What it does |
+| --- | --- |
+| `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `title_case`, `slugify` | Change naming style. |
+| `truncate`, `pad_left`, `pad_right`, `center_text`, `wrap_text`, `indent_text`, `dedent_text` | Layout. |
+| `words`, `lines`, `count_words`, `is_blank`, `is_palindrome`, `remove_prefix`, `remove_suffix` | Inspect text. |
+| `strip_html`, `html_escape`, `html_unescape` | HTML text. |
+| `levenshtein(a, b)`, `similarity(a, b)`, `closest_match(word, options)` | Fuzzy matching. |
+| `regex_find_all`, `regex_replace`, `regex_split`, `regex_test`, `regex_groups` | Regular expressions. |
+| `extract_numbers`, `extract_emails`, `extract_urls`, `is_email`, `is_url` | Pull data out of text. |
+| `number_format(1234.5)`, `ordinal(3)`, `pluralize(2, "file")`, `human_size(bytes)`, `human_duration(seconds)`, `roman(n)` | Friendly formatting. |
+| `random_string`, `random_token`, `random_password` | Secure random text. |
+| `colorize(text, "red")`, `progress_bar(done, total)`, `table(rows)`, `print_table(rows)` | Terminal output. |
+
+### Math and statistics
+
+| Function | What it does |
+| --- | --- |
+| `sqrt`, `floor`, `ceil`, `trunc`, `log`, `log2`, `log10`, `exp`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `radians`, `degrees`, `hypot`, `distance` | Math functions. |
+| `pi`, `tau`, `inf`, `nan` | Constants. |
+| `gcd`, `lcm`, `factorial`, `isqrt`, `is_prime`, `primes(limit)`, `prime_factors`, `fibonacci(n)` | Number theory. |
+| `combinations`, `permutations`, `cartesian_product`, `combinations_count`, `permutations_count` | Counting. |
+| `mean`, `median`, `mode`, `stdev`, `variance`, `percentile(values, p)` | Statistics. |
+| `sign`, `lerp`, `map_range`, `percent`, `is_close`, `to_bool`, `to_base(n, base)` | Small helpers. |
+| `random_bool`, `random_gauss`, `random_seed`, `random_color`, `roll("2d6")` | More randomness. |
+
+### Dates, files and data
+
+| Function | What it does |
+| --- | --- |
+| `parse_time(text, fmt)`, `add_days`, `add_time`, `diff_days`, `diff_seconds`, `utc_now`, `from_timestamp` | Date arithmetic. |
+| `weekday_name`, `month_name`, `is_leap_year`, `days_in_month`, `calendar_text`, `time_ago` | Calendar helpers. |
+| `file_size`, `file_name`, `file_stem`, `file_ext`, `parent_dir`, `abs_path`, `modified_time`, `count_lines`, `file_hash` | File information. |
+| `home_dir`, `temp_dir`, `temp_file`, `touch`, `rename`, `delete_dir`, `copy_dir`, `glob_files`, `walk_dir`, `disk_usage` | Folders and paths. |
+| `zip_folder`, `unzip` | Archives. |
+| `read_toml`, `toml_parse`, `read_ini`, `csv_parse`, `csv_stringify` | More data formats. |
+| `sqlite_query(path, sql, params)`, `sqlite_exec(path, sql, params)` | Use a SQLite database; queries return a list of dicts. |
+
+### Encoding, network and system
+
+| Function | What it does |
+| --- | --- |
+| `sha1`, `sha512`, `hmac_sha256`, `crc32`, `hex_encode`, `hex_decode`, `base32_encode`, `base32_decode`, `compress`, `decompress`, `rot13` | Hashing and encoding. |
+| `url_parse`, `url_join`, `query_string` | Work with URLs. |
+| `http_json(url)`, `dns_lookup`, `local_ip`, `port_open(host, port)`, `is_online()` | Network helpers. |
+| `os_name`, `hostname`, `username`, `cpu_count`, `pid`, `python_version`, `env_set`, `env_all`, `which` | About this computer. |
+| `read_int`, `read_float`, `confirm`, `choose(prompt, options)`, `get_password` | Terminal input. |
+| `log_info`, `log_warn`, `log_error`, `clear_screen`, `beep`, `clipboard_get`, `clipboard_set` | Logging and desktop helpers. |
+
+Some of these names (such as `first`, `lines` or `mode`) are common variable
+names. You can still use them: assigning a value simply replaces the built-in
+in your program.
 
 ## Error messages
 
