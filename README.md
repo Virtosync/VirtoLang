@@ -27,6 +27,8 @@ print(f"Hello, {name}!")
 - [Generators, async and unpacking](#generators-async-and-unpacking)
 - [Classes](#classes)
 - [Exceptions](#exceptions)
+- [Modules and packages](#modules-and-packages)
+- [Virtual environments](#virtual-environments)
 - [Using Python from VirtoLang](#using-python-from-virtolang)
 - [Built-in functions](#built-in-functions)
 - [Error messages](#error-messages)
@@ -68,16 +70,19 @@ vlang hello.vlang
 
 ### Command-line options
 
-| Command | What it does |
-| --- | --- |
-| `vlang file.vlang` | Run a program. |
-| `vlang` | Run `main.vlang` from the current folder. |
-| `vlang -c file.vlang` | Check the syntax without running the program. |
-| `vlang -e "print(1 + 2)"` | Run code given directly on the command line. |
-| `vlang -r` | Start the [interactive shell](#the-interactive-shell-repl). |
-| `vlang -r file.vlang` | Run a program, then open the shell with its variables and functions available. |
-| `vlang -v` | Show the version. |
-| `vlang -h` | Show help. |
+| Command                       | What it does                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------ |
+| `vlang file.vlang`            | Run a program.                                                                 |
+| `vlang`                       | Run `main.vlang` from the current folder.                                      |
+| `vlang -c file.vlang`         | Check the syntax without running the program.                                  |
+| `vlang -e "print(1 + 2)"`     | Run code given directly on the command line.                                   |
+| `vlang -r`                    | Start the [interactive shell](#the-interactive-shell-repl).                    |
+| `vlang -r file.vlang`         | Run a program, then open the shell with its variables and functions available. |
+| `vlang --create-venv DIR`     | Create a [virtual environment](#virtual-environments) in `DIR`.                |
+| `vlang --venv DIR file.vlang` | Run a program using the packages of the environment in `DIR`.                  |
+| `vlang --paths`               | Show where VirtoLang looks for modules.                                        |
+| `vlang -v`                    | Show the version.                                                              |
+| `vlang -h`                    | Show help.                                                                     |
 
 Options can be written in lower or upper case (`-r` or `-R`) or in long form
 (`--repl`, `--check`, `--execute`, `--version`).
@@ -127,12 +132,12 @@ Type ":help" for help, or exit() to quit.
 
 Shell commands start with a colon:
 
-| Command | Meaning |
-| --- | --- |
-| `:help` | Show help. |
-| `:vars` | List everything you have defined. |
-| `:reset` | Clear the session and start fresh. |
-| `:exit` | Leave the shell. `exit()` and `quit()` also work. |
+| Command  | Meaning                                           |
+| -------- | ------------------------------------------------- |
+| `:help`  | Show help.                                        |
+| `:vars`  | List everything you have defined.                 |
+| `:reset` | Clear the session and start fresh.                |
+| `:exit`  | Leave the shell. `exit()` and `quit()` also work. |
 
 ## Language basics
 
@@ -190,16 +195,16 @@ Using a name that has not been defined is a `NameError`.
 
 ### Operators
 
-| Operator | Meaning |
-| --- | --- |
-| `+` `-` `*` `/` | Add, subtract, multiply, divide |
-| `//` | Floor division |
-| `%` | Remainder |
-| `**` | Power (`2 ** 10` is `1024`) |
-| `==` `!=` `<` `>` `<=` `>=` | Comparison |
-| `is`, `is not` | Identity (whether two names refer to the same object) |
-| `in`, `not in` | Membership test (`3 in [1, 2, 3]`) |
-| `and`, `or`, `not` | Boolean logic (`and` / `or` short-circuit) |
+| Operator                    | Meaning                                               |
+| --------------------------- | ----------------------------------------------------- |
+| `+` `-` `*` `/`             | Add, subtract, multiply, divide                       |
+| `//`                        | Floor division                                        |
+| `%`                         | Remainder                                             |
+| `**`                        | Power (`2 ** 10` is `1024`)                           |
+| `==` `!=` `<` `>` `<=` `>=` | Comparison                                            |
+| `is`, `is not`              | Identity (whether two names refer to the same object) |
+| `in`, `not in`              | Membership test (`3 in [1, 2, 3]`)                    |
+| `and`, `or`, `not`          | Boolean logic (`and` / `or` short-circuit)            |
 
 Comparisons can be chained, as in Python: `0 < x < 10`.
 Use `is None` when checking for an absent value; use `==` for ordinary value
@@ -804,6 +809,102 @@ try {
 }
 ```
 
+## Modules and packages
+
+Any `.vlang` file is a module. Put `tools.vlang` next to your program and
+import it by name:
+
+```vlang
+import tools
+from tools import greet as hello
+
+print(tools.VERSION)
+hello("Ada")
+```
+
+A folder containing an `__init__.vlang` file is a **package**. Its
+`__init__.vlang` runs the first time the package is imported, and the files
+inside become submodules:
+
+```text
+app.vlang
+shapes/
+    __init__.vlang
+    circle.vlang
+    square.vlang
+```
+
+```vlang
+import shapes.circle
+from shapes import square
+from shapes.circle import area as circle_area
+from shapes import *
+```
+
+Inside a package, use relative imports:
+
+```vlang
+from . import square
+from .circle import area
+from ..common import helpers
+```
+
+Other things to know:
+
+- `from module import *` imports every public name, or the names listed in
+  the module's `__all__` list.
+- `__name__` is `"__main__"` in the program you run and the module's name
+  inside an imported module, so `if __name__ == "__main__" { main() }` works.
+- `__file__` and `__package__` describe where the module came from.
+- Modules run once and are cached. Circular imports are supported.
+- Errors inside a module point to that module's own file and line.
+- Namespace packages (folders without `__init__.vlang`) are not supported.
+
+### Where modules are found
+
+Top-level names are looked up in this order:
+
+1. The folder of the running program (the current folder in the shell).
+2. Folders listed in the `VIRTOLANG_PATH` environment variable.
+3. The `packages` folder: the active [virtual environment](#virtual-environments)'s
+   if there is one, otherwise the global `packages` folder next to VirtoLang
+   (override it with `VIRTOLANG_PACKAGES`).
+4. Python modules and installed Python packages.
+
+A package folder wins over a `name.vlang` file of the same name. Run
+`vlang --paths` to see the exact folders in use.
+
+## Virtual environments
+
+A virtual environment gives a project its own `packages` folder, separate from
+the global one.
+
+```powershell
+vlang --create-venv .venv
+.venv\Scripts\activate        # or: source .venv/bin/activate
+```
+
+`activate` scripts are provided for `cmd` (`activate.bat`), PowerShell
+(`activate.ps1`) and sh (`activate`). You don't have to activate it: a `.venv`
+or `venv` folder created by VirtoLang is found automatically in your program's
+folder or any parent, and you can also choose one explicitly:
+
+```powershell
+vlang --venv .venv app.vlang
+```
+
+When an environment is active, only its `packages` folder is searched, so
+projects stay isolated. Package managers written in VirtoLang can use these
+built-ins:
+
+| Function              | What it does                                           |
+| --------------------- | ------------------------------------------------------ |
+| `packages_dir()`      | The `packages` folder imports are currently read from. |
+| `venv_dir()`          | The active virtual environment folder, or `none`.      |
+| `module_paths()`      | The list of folders searched for modules.              |
+| `module_path(name)`   | The file a module would be loaded from, or `none`.     |
+| `create_venv(folder)` | Create a virtual environment and return its path.      |
+
 ## Using Python from VirtoLang
 
 All of Python's built-in functions (`print`, `len`, `range`, `sorted`, `open`,
@@ -833,27 +934,27 @@ jobs that normally take a lot of code. They need no `import`. Type
 
 ### Files and folders
 
-| Function | What it does |
-| --- | --- |
-| `read_file(path)` / `read_lines(path)` | Read a text file as one string / a list of lines. |
+| Function                                             | What it does                                          |
+| ---------------------------------------------------- | ----------------------------------------------------- |
+| `read_file(path)` / `read_lines(path)`               | Read a text file as one string / a list of lines.     |
 | `write_file(path, text)` / `append_file(path, text)` | Replace / add to a file (parent folders are created). |
-| `read_bytes(path)` / `write_bytes(path, data)` | Binary file access. |
-| `file_exists(path)`, `is_file(path)`, `is_dir(path)` | Check what a path is. |
-| `list_dir(path=".")` | Sorted names inside a folder. |
-| `make_dir(path)` | Create a folder (and parents). |
-| `delete_file(path)` | Delete a file, or a folder and its contents. |
-| `copy_file(src, dst)`, `move_file(src, dst)` | Copy, move or rename. |
-| `join_path(...)`, `cwd()` | Build a path, get the current folder. |
+| `read_bytes(path)` / `write_bytes(path, data)`       | Binary file access.                                   |
+| `file_exists(path)`, `is_file(path)`, `is_dir(path)` | Check what a path is.                                 |
+| `list_dir(path=".")`                                 | Sorted names inside a folder.                         |
+| `make_dir(path)`                                     | Create a folder (and parents).                        |
+| `delete_file(path)`                                  | Delete a file, or a folder and its contents.          |
+| `copy_file(src, dst)`, `move_file(src, dst)`         | Copy, move or rename.                                 |
+| `join_path(...)`, `cwd()`                            | Build a path, get the current folder.                 |
 
 ### JSON and CSV
 
-| Function | What it does |
-| --- | --- |
-| `json_parse(text)` / `json_stringify(value, indent=None)` | Convert between JSON text and values. |
-| `read_json(path)` / `write_json(path, value)` | Load or save a JSON file. |
-| `read_csv(path)` | Read a CSV with a header row into a list of dicts. |
-| `write_csv(path, rows)` | Write a list of dicts as a CSV. |
-| `pretty(value)` | Indented text for dicts and lists. |
+| Function                                                  | What it does                                       |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| `json_parse(text)` / `json_stringify(value, indent=None)` | Convert between JSON text and values.              |
+| `read_json(path)` / `write_json(path, value)`             | Load or save a JSON file.                          |
+| `read_csv(path)`                                          | Read a CSV with a header row into a list of dicts. |
+| `write_csv(path, rows)`                                   | Write a list of dicts as a CSV.                    |
+| `pretty(value)`                                           | Indented text for dicts and lists.                 |
 
 ```vlang
 write_json("config.json", {"theme": "dark", "size": 12})
@@ -952,112 +1053,112 @@ The GUI uses Python's `tkinter`, which is included with most Python installs.
 
 ### Time, random, hashing and encoding
 
-| Function | What it does |
-| --- | --- |
-| `sleep(seconds)` | Pause the program. |
-| `now(fmt="%Y-%m-%d %H:%M:%S")`, `today()` | Current local time / date as text. |
-| `timestamp()`, `format_time(seconds, fmt)` | Unix time and formatting it. |
-| `random_int(low, high)` | Random whole number (both ends included). |
-| `random_float()`, `random_choice(items)`, `shuffle(items)` | Random helpers. |
-| `uuid()` | A new unique ID. |
-| `sha256(value)`, `md5(value)` | Hash text or bytes as hex. |
-| `base64_encode(value)` / `base64_decode(text)` | Base64 conversion. |
+| Function                                                   | What it does                              |
+| ---------------------------------------------------------- | ----------------------------------------- |
+| `sleep(seconds)`                                           | Pause the program.                        |
+| `now(fmt="%Y-%m-%d %H:%M:%S")`, `today()`                  | Current local time / date as text.        |
+| `timestamp()`, `format_time(seconds, fmt)`                 | Unix time and formatting it.              |
+| `random_int(low, high)`                                    | Random whole number (both ends included). |
+| `random_float()`, `random_choice(items)`, `shuffle(items)` | Random helpers.                           |
+| `uuid()`                                                   | A new unique ID.                          |
+| `sha256(value)`, `md5(value)`                              | Hash text or bytes as hex.                |
+| `base64_encode(value)` / `base64_decode(text)`             | Base64 conversion.                        |
 
 ### System and utilities
 
-| Function | What it does |
-| --- | --- |
-| `run(command)` | Run a command; returns `output`, `error`, `code` and `ok`. |
-| `env(name, default=None)` | Read an environment variable. |
-| `args()` | Command-line arguments given to VirtoLang. |
-| `open_url(url)` | Open a page in the default browser. |
-| `clamp(value, low, high)` | Keep a number within limits. |
-| `to_int(value, default=0)`, `to_float(value, default=0.0)` | Convert without errors. |
-| `deep_copy(value)` | Fully independent copy of a list or dict. |
-| `list_builtins()` | List all of the functions on this page. |
+| Function                                                   | What it does                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------------- |
+| `run(command)`                                             | Run a command; returns `output`, `error`, `code` and `ok`. |
+| `env(name, default=None)`                                  | Read an environment variable.                              |
+| `args()`                                                   | Command-line arguments given to VirtoLang.                 |
+| `open_url(url)`                                            | Open a page in the default browser.                        |
+| `clamp(value, low, high)`                                  | Keep a number within limits.                               |
+| `to_int(value, default=0)`, `to_float(value, default=0.0)` | Convert without errors.                                    |
+| `deep_copy(value)`                                         | Fully independent copy of a list or dict.                  |
+| `list_builtins()`                                          | List all of the functions on this page.                    |
 
 ### Async helpers and decorators
 
-| Function | What it does |
-| --- | --- |
-| `async_run(coroutine)` | Run an `async def` call to completion; returns its result. |
-| `await async_sleep(seconds)` | Pause the current task without blocking others. |
-| `await gather(a(), b())` | Run several async calls together; returns a list of results. |
-| `create_task(coroutine)` | Start an async call in the background. |
-| `@memoize` | Decorator: cache results for repeated arguments. |
-| `@timed` | Decorator: print how long each call takes. |
-| `@retry(times, delay=0)` | Decorator: call again if the function raises. |
+| Function                     | What it does                                                 |
+| ---------------------------- | ------------------------------------------------------------ |
+| `async_run(coroutine)`       | Run an `async def` call to completion; returns its result.   |
+| `await async_sleep(seconds)` | Pause the current task without blocking others.              |
+| `await gather(a(), b())`     | Run several async calls together; returns a list of results. |
+| `create_task(coroutine)`     | Start an async call in the background.                       |
+| `@memoize`                   | Decorator: cache results for repeated arguments.             |
+| `@timed`                     | Decorator: print how long each call takes.                   |
+| `@retry(times, delay=0)`     | Decorator: call again if the function raises.                |
 
 `run("...")` executes through the system shell, so only pass it text you trust.
 
 ### Lists, dictionaries and functional helpers
 
-| Function | What it does |
-| --- | --- |
-| `first(items, default)`, `last(items, default)`, `take(items, n)`, `drop(items, n)` | Pick items from the ends. |
-| `chunk(items, size)`, `flatten(items, depth=1)`, `flat_map(fn, items)` | Reshape lists (`depth=-1` flattens fully). |
-| `unique(items)`, `compact(items)`, `reverse(items)`, `rotate(items, n)`, `transpose(rows)`, `repeat(value, n)` | Tidy and rearrange. |
-| `group_by(items, fn)`, `count_by(items, fn)`, `partition(items, fn)`, `counter(items)`, `most_common(items, n)` | Group and count. |
-| `pluck(items, key)`, `sort_by(items, fn)`, `min_by`, `max_by`, `sum_by` | Work with records. |
-| `find(items, fn)`, `find_index`, `every`, `some`, `count_if`, `index_of` | Search. |
-| `reduce(fn, items, start)`, `accumulate(items)`, `product(items)`, `pairwise(items)`, `sliding_window(items, n)` | Fold and walk lists. |
-| `union`, `intersection`, `difference`, `sample(items, n)`, `zip_dict(keys, values)` | Set-style helpers. |
-| `merge(a, b)`, `deep_merge(a, b)`, `pick(d, keys)`, `omit(d, keys)`, `invert(d)`, `map_values(d, fn)`, `map_keys(d, fn)`, `filter_dict(d, fn)` | Dictionary helpers. |
-| `get_path(data, "a.b.0")`, `set_path(data, "a.b", value)` | Read/write nested data. |
-| `compose(f, g)`, `pipe(value, f, g)`, `partial(fn, ...)`, `once(fn)`, `identity`, `constant`, `noop`, `tap`, `default(value, fallback)` | Functional tools. |
-| `measure(fn)`, `benchmark(fn, runs)`, `stopwatch()` | Timing. |
-| `parallel_map(fn, items, workers)`, `run_in_thread(fn)`, `every_seconds(n, fn, times)` | Concurrency and scheduling. |
-| `type_name`, `is_number`, `is_string`, `is_list`, `is_dict`, `is_none`, `is_empty`, `is_numeric_string` | Type checks. |
+| Function                                                                                                                                       | What it does                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `first(items, default)`, `last(items, default)`, `take(items, n)`, `drop(items, n)`                                                            | Pick items from the ends.                  |
+| `chunk(items, size)`, `flatten(items, depth=1)`, `flat_map(fn, items)`                                                                         | Reshape lists (`depth=-1` flattens fully). |
+| `unique(items)`, `compact(items)`, `reverse(items)`, `rotate(items, n)`, `transpose(rows)`, `repeat(value, n)`                                 | Tidy and rearrange.                        |
+| `group_by(items, fn)`, `count_by(items, fn)`, `partition(items, fn)`, `counter(items)`, `most_common(items, n)`                                | Group and count.                           |
+| `pluck(items, key)`, `sort_by(items, fn)`, `min_by`, `max_by`, `sum_by`                                                                        | Work with records.                         |
+| `find(items, fn)`, `find_index`, `every`, `some`, `count_if`, `index_of`                                                                       | Search.                                    |
+| `reduce(fn, items, start)`, `accumulate(items)`, `product(items)`, `pairwise(items)`, `sliding_window(items, n)`                               | Fold and walk lists.                       |
+| `union`, `intersection`, `difference`, `sample(items, n)`, `zip_dict(keys, values)`                                                            | Set-style helpers.                         |
+| `merge(a, b)`, `deep_merge(a, b)`, `pick(d, keys)`, `omit(d, keys)`, `invert(d)`, `map_values(d, fn)`, `map_keys(d, fn)`, `filter_dict(d, fn)` | Dictionary helpers.                        |
+| `get_path(data, "a.b.0")`, `set_path(data, "a.b", value)`                                                                                      | Read/write nested data.                    |
+| `compose(f, g)`, `pipe(value, f, g)`, `partial(fn, ...)`, `once(fn)`, `identity`, `constant`, `noop`, `tap`, `default(value, fallback)`        | Functional tools.                          |
+| `measure(fn)`, `benchmark(fn, runs)`, `stopwatch()`                                                                                            | Timing.                                    |
+| `parallel_map(fn, items, workers)`, `run_in_thread(fn)`, `every_seconds(n, fn, times)`                                                         | Concurrency and scheduling.                |
+| `type_name`, `is_number`, `is_string`, `is_list`, `is_dict`, `is_none`, `is_empty`, `is_numeric_string`                                        | Type checks.                               |
 
 ### Text and regular expressions
 
-| Function | What it does |
-| --- | --- |
-| `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `title_case`, `slugify` | Change naming style. |
-| `truncate`, `pad_left`, `pad_right`, `center_text`, `wrap_text`, `indent_text`, `dedent_text` | Layout. |
-| `words`, `lines`, `count_words`, `is_blank`, `is_palindrome`, `remove_prefix`, `remove_suffix` | Inspect text. |
-| `strip_html`, `html_escape`, `html_unescape` | HTML text. |
-| `levenshtein(a, b)`, `similarity(a, b)`, `closest_match(word, options)` | Fuzzy matching. |
-| `regex_find_all`, `regex_replace`, `regex_split`, `regex_test`, `regex_groups` | Regular expressions. |
-| `extract_numbers`, `extract_emails`, `extract_urls`, `is_email`, `is_url` | Pull data out of text. |
-| `number_format(1234.5)`, `ordinal(3)`, `pluralize(2, "file")`, `human_size(bytes)`, `human_duration(seconds)`, `roman(n)` | Friendly formatting. |
-| `random_string`, `random_token`, `random_password` | Secure random text. |
-| `colorize(text, "red")`, `progress_bar(done, total)`, `table(rows)`, `print_table(rows)` | Terminal output. |
+| Function                                                                                                                  | What it does           |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `title_case`, `slugify`                                          | Change naming style.   |
+| `truncate`, `pad_left`, `pad_right`, `center_text`, `wrap_text`, `indent_text`, `dedent_text`                             | Layout.                |
+| `words`, `lines`, `count_words`, `is_blank`, `is_palindrome`, `remove_prefix`, `remove_suffix`                            | Inspect text.          |
+| `strip_html`, `html_escape`, `html_unescape`                                                                              | HTML text.             |
+| `levenshtein(a, b)`, `similarity(a, b)`, `closest_match(word, options)`                                                   | Fuzzy matching.        |
+| `regex_find_all`, `regex_replace`, `regex_split`, `regex_test`, `regex_groups`                                            | Regular expressions.   |
+| `extract_numbers`, `extract_emails`, `extract_urls`, `is_email`, `is_url`                                                 | Pull data out of text. |
+| `number_format(1234.5)`, `ordinal(3)`, `pluralize(2, "file")`, `human_size(bytes)`, `human_duration(seconds)`, `roman(n)` | Friendly formatting.   |
+| `random_string`, `random_token`, `random_password`                                                                        | Secure random text.    |
+| `colorize(text, "red")`, `progress_bar(done, total)`, `table(rows)`, `print_table(rows)`                                  | Terminal output.       |
 
 ### Math and statistics
 
-| Function | What it does |
-| --- | --- |
-| `sqrt`, `floor`, `ceil`, `trunc`, `log`, `log2`, `log10`, `exp`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `radians`, `degrees`, `hypot`, `distance` | Math functions. |
-| `pi`, `tau`, `inf`, `nan` | Constants. |
-| `gcd`, `lcm`, `factorial`, `isqrt`, `is_prime`, `primes(limit)`, `prime_factors`, `fibonacci(n)` | Number theory. |
-| `combinations`, `permutations`, `cartesian_product`, `combinations_count`, `permutations_count` | Counting. |
-| `mean`, `median`, `mode`, `stdev`, `variance`, `percentile(values, p)` | Statistics. |
-| `sign`, `lerp`, `map_range`, `percent`, `is_close`, `to_bool`, `to_base(n, base)` | Small helpers. |
-| `random_bool`, `random_gauss`, `random_seed`, `random_color`, `roll("2d6")` | More randomness. |
+| Function                                                                                                                                                         | What it does     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `sqrt`, `floor`, `ceil`, `trunc`, `log`, `log2`, `log10`, `exp`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `radians`, `degrees`, `hypot`, `distance` | Math functions.  |
+| `pi`, `tau`, `inf`, `nan`                                                                                                                                        | Constants.       |
+| `gcd`, `lcm`, `factorial`, `isqrt`, `is_prime`, `primes(limit)`, `prime_factors`, `fibonacci(n)`                                                                 | Number theory.   |
+| `combinations`, `permutations`, `cartesian_product`, `combinations_count`, `permutations_count`                                                                  | Counting.        |
+| `mean`, `median`, `mode`, `stdev`, `variance`, `percentile(values, p)`                                                                                           | Statistics.      |
+| `sign`, `lerp`, `map_range`, `percent`, `is_close`, `to_bool`, `to_base(n, base)`                                                                                | Small helpers.   |
+| `random_bool`, `random_gauss`, `random_seed`, `random_color`, `roll("2d6")`                                                                                      | More randomness. |
 
 ### Dates, files and data
 
-| Function | What it does |
-| --- | --- |
-| `parse_time(text, fmt)`, `add_days`, `add_time`, `diff_days`, `diff_seconds`, `utc_now`, `from_timestamp` | Date arithmetic. |
-| `weekday_name`, `month_name`, `is_leap_year`, `days_in_month`, `calendar_text`, `time_ago` | Calendar helpers. |
-| `file_size`, `file_name`, `file_stem`, `file_ext`, `parent_dir`, `abs_path`, `modified_time`, `count_lines`, `file_hash` | File information. |
-| `home_dir`, `temp_dir`, `temp_file`, `touch`, `rename`, `delete_dir`, `copy_dir`, `glob_files`, `walk_dir`, `disk_usage` | Folders and paths. |
-| `zip_folder`, `unzip` | Archives. |
-| `read_toml`, `toml_parse`, `read_ini`, `csv_parse`, `csv_stringify` | More data formats. |
-| `sqlite_query(path, sql, params)`, `sqlite_exec(path, sql, params)` | Use a SQLite database; queries return a list of dicts. |
+| Function                                                                                                                 | What it does                                           |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `parse_time(text, fmt)`, `add_days`, `add_time`, `diff_days`, `diff_seconds`, `utc_now`, `from_timestamp`                | Date arithmetic.                                       |
+| `weekday_name`, `month_name`, `is_leap_year`, `days_in_month`, `calendar_text`, `time_ago`                               | Calendar helpers.                                      |
+| `file_size`, `file_name`, `file_stem`, `file_ext`, `parent_dir`, `abs_path`, `modified_time`, `count_lines`, `file_hash` | File information.                                      |
+| `home_dir`, `temp_dir`, `temp_file`, `touch`, `rename`, `delete_dir`, `copy_dir`, `glob_files`, `walk_dir`, `disk_usage` | Folders and paths.                                     |
+| `zip_folder`, `unzip`                                                                                                    | Archives.                                              |
+| `read_toml`, `toml_parse`, `read_ini`, `csv_parse`, `csv_stringify`                                                      | More data formats.                                     |
+| `sqlite_query(path, sql, params)`, `sqlite_exec(path, sql, params)`                                                      | Use a SQLite database; queries return a list of dicts. |
 
 ### Encoding, network and system
 
-| Function | What it does |
-| --- | --- |
-| `sha1`, `sha512`, `hmac_sha256`, `crc32`, `hex_encode`, `hex_decode`, `base32_encode`, `base32_decode`, `compress`, `decompress`, `rot13` | Hashing and encoding. |
-| `url_parse`, `url_join`, `query_string` | Work with URLs. |
-| `http_json(url)`, `dns_lookup`, `local_ip`, `port_open(host, port)`, `is_online()` | Network helpers. |
-| `os_name`, `hostname`, `username`, `cpu_count`, `pid`, `python_version`, `env_set`, `env_all`, `which` | About this computer. |
-| `read_int`, `read_float`, `confirm`, `choose(prompt, options)`, `get_password` | Terminal input. |
-| `log_info`, `log_warn`, `log_error`, `clear_screen`, `beep`, `clipboard_get`, `clipboard_set` | Logging and desktop helpers. |
+| Function                                                                                                                                  | What it does                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `sha1`, `sha512`, `hmac_sha256`, `crc32`, `hex_encode`, `hex_decode`, `base32_encode`, `base32_decode`, `compress`, `decompress`, `rot13` | Hashing and encoding.        |
+| `url_parse`, `url_join`, `query_string`                                                                                                   | Work with URLs.              |
+| `http_json(url)`, `dns_lookup`, `local_ip`, `port_open(host, port)`, `is_online()`                                                        | Network helpers.             |
+| `os_name`, `hostname`, `username`, `cpu_count`, `pid`, `python_version`, `env_set`, `env_all`, `which`                                    | About this computer.         |
+| `read_int`, `read_float`, `confirm`, `choose(prompt, options)`, `get_password`                                                            | Terminal input.              |
+| `log_info`, `log_warn`, `log_error`, `clear_screen`, `beep`, `clipboard_get`, `clipboard_set`                                             | Logging and desktop helpers. |
 
 Some of these names (such as `first`, `lines` or `mode`) are common variable
 names. You can still use them: assigning a value simply replaces the built-in
