@@ -29,6 +29,7 @@ print(f"Hello, {name}!")
 - [Exceptions](#exceptions)
 - [Modules and packages](#modules-and-packages)
 - [Virtual environments](#virtual-environments)
+- [Building executables](#building-executables)
 - [Using Python from VirtoLang](#using-python-from-virtolang)
 - [Built-in functions](#built-in-functions)
 - [Error messages](#error-messages)
@@ -70,19 +71,20 @@ vlang hello.vlang
 
 ### Command-line options
 
-| Command                       | What it does                                                                   |
-| ----------------------------- | ------------------------------------------------------------------------------ |
-| `vlang file.vlang`            | Run a program.                                                                 |
-| `vlang`                       | Run `main.vlang` from the current folder.                                      |
-| `vlang -c file.vlang`         | Check the syntax without running the program.                                  |
-| `vlang -e "print(1 + 2)"`     | Run code given directly on the command line.                                   |
-| `vlang -r`                    | Start the [interactive shell](#the-interactive-shell-repl).                    |
-| `vlang -r file.vlang`         | Run a program, then open the shell with its variables and functions available. |
-| `vlang --create-venv DIR`     | Create a [virtual environment](#virtual-environments) in `DIR`.                |
-| `vlang --venv DIR file.vlang` | Run a program using the packages of the environment in `DIR`.                  |
-| `vlang --paths`               | Show where VirtoLang looks for modules.                                        |
-| `vlang -v`                    | Show the version.                                                              |
-| `vlang -h`                    | Show help.                                                                     |
+| Command                          | What it does                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| `vlang file.vlang`               | Run a program.                                                                 |
+| `vlang`                          | Run `main.vlang` from the current folder.                                      |
+| `vlang -c file.vlang`            | Check the syntax without running the program.                                  |
+| `vlang -e "print(1 + 2)"`        | Run code given directly on the command line.                                   |
+| `vlang -r`                       | Start the [interactive shell](#the-interactive-shell-repl).                    |
+| `vlang -r file.vlang`            | Run a program, then open the shell with its variables and functions available. |
+| `vlang build file.vlang [flags]` | Build a standalone [executable](#building-executables).                        |
+| `vlang --create-venv DIR`        | Create a [virtual environment](#virtual-environments) in `DIR`.                |
+| `vlang --venv DIR file.vlang`    | Run a program using the packages of the environment in `DIR`.                  |
+| `vlang --paths`                  | Show where VirtoLang looks for modules.                                        |
+| `vlang -v`                       | Show the version.                                                              |
+| `vlang -h`                       | Show help.                                                                     |
 
 Options can be written in lower or upper case (`-r` or `-R`) or in long form
 (`--repl`, `--check`, `--execute`, `--version`).
@@ -905,6 +907,63 @@ built-ins:
 | `module_path(name)`   | The file a module would be loaded from, or `none`.     |
 | `create_venv(folder)` | Create a virtual environment and return its path.      |
 
+## Building executables
+
+Turn a program into a standalone executable that runs without VirtoLang
+installed:
+
+```powershell
+vlang build app.vlang
+```
+
+This produces a folder `dist/app/` containing `app.exe` (`app` on Linux and
+macOS) and its support files; copy the whole folder to share it. The program,
+every `.vlang` file in its folder, and the active
+`packages` folder are bundled, and the Python modules you import are detected
+automatically. The executable is built for the operating system you build on.
+
+`vlang build` uses [PyInstaller](https://pyinstaller.org) and passes every flag
+it does not recognise straight to it, so all PyInstaller options work. Put the
+`.vlang` file first:
+
+```powershell
+vlang build app.vlang --name MyApp --windowed --icon app.ico
+vlang build app.vlang --onefile -o release
+vlang build app.vlang --add-data "assets;assets" --hidden-import numpy
+```
+
+| Option                   | What it does                                                        |
+| ------------------------ | ------------------------------------------------------------------- |
+| `-o DIR`, `--output DIR` | Where to put the result (default `dist`).                           |
+| `--keep-temp`            | Keep the temporary build files.                                     |
+| `--no-check`             | Skip the syntax check before building.                              |
+| _any PyInstaller flag_   | Forwarded to PyInstaller (`--onedir`, `--windowed`, `--icon`, ...). |
+
+The default is a folder, which starts almost instantly. Use `--onefile` for a
+single `.exe`; it is convenient to share but unpacks itself on every launch,
+which can add a couple of seconds to start-up. The
+program is syntax-checked first. PyInstaller is installed automatically if it
+is missing, and building from the Windows installer's `vlang.exe` needs Python
+installed on the computer.
+
+Programs can build too. Keyword arguments can be written `name=value` or
+`name: value`:
+
+```vlang
+exe = build_exe(
+    name: "MyApp",
+    sources: ["app.vlang"],
+    flags: ["--onefile"],
+)
+print(exe)
+```
+
+`build_exe(path, *pyinstaller_flags, sources=, flags=, output=, name=, onefile=, windowed=, icon=)`
+returns the path of the executable. The first of `sources` is the program that
+runs and the others are bundled as extra modules. `--one-file` and `--one-dir`
+are accepted as spellings of `--onefile` and `--onedir`. Files your program reads at run time
+(images, JSON...) are not bundled unless you add them with `--add-data`.
+
 ## Using Python from VirtoLang
 
 All of Python's built-in functions (`print`, `len`, `range`, `sorted`, `open`,
@@ -1112,18 +1171,18 @@ The GUI uses Python's `tkinter`, which is included with most Python installs.
 
 ### Text and regular expressions
 
-| Function                                                                                                                  | What it does           |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `title_case`, `slugify`                                          | Change naming style.   |
-| `truncate`, `pad_left`, `pad_right`, `center_text`, `wrap_text`, `indent_text`, `dedent_text`                             | Layout.                |
-| `words`, `lines`, `count_words`, `is_blank`, `is_palindrome`, `remove_prefix`, `remove_suffix`                            | Inspect text.          |
-| `strip_html`, `html_escape`, `html_unescape`                                                                              | HTML text.             |
-| `levenshtein(a, b)`, `similarity(a, b)`, `closest_match(word, options)`                                                   | Fuzzy matching.        |
-| `regex_find_all`, `regex_replace`, `regex_split`, `regex_test`, `regex_groups`                                            | Regular expressions.   |
-| `extract_numbers`, `extract_emails`, `extract_urls`, `is_email`, `is_url`                                                 | Pull data out of text. |
-| `number_format(1234.5)`, `ordinal(3)`, `pluralize(2, "file")`, `human_size(bytes)`, `human_duration(seconds)`, `roman(n)` | Friendly formatting.   |
-| `random_string`, `random_token`, `random_password`                                                                        | Secure random text.    |
-| `colorize(text, "red")`, `progress_bar(done, total)`, `table(rows)`, `print_table(rows)`                                  | Terminal output.       |
+| Function                                                                                                                                                                                                  | What it does           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `title_case`, `slugify`                                                                                                                          | Change naming style.   |
+| `truncate`, `pad_left`, `pad_right`, `center_text`, `wrap_text`, `indent_text`, `dedent_text`                                                                                                             | Layout.                |
+| `words`, `lines`, `count_words`, `is_blank`, `is_palindrome`, `remove_prefix`, `remove_suffix`                                                                                                            | Inspect text.          |
+| `strip_html`, `html_escape`, `html_unescape`                                                                                                                                                              | HTML text.             |
+| `levenshtein(a, b)`, `similarity(a, b)`, `closest_match(word, options)`                                                                                                                                   | Fuzzy matching.        |
+| `regex_find_all`, `regex_replace`, `regex_split`, `regex_test`, `regex_groups`                                                                                                                            | Regular expressions.   |
+| `extract_numbers`, `extract_emails`, `extract_urls`, `is_email`, `is_url`                                                                                                                                 | Pull data out of text. |
+| `number_format(1234.5)`, `ordinal(3)`, `pluralize(2, "file")`, `human_size(bytes)`, `computer_size(human_size)`, `human_duration(seconds)`, `computer_duration(human_duration)`, `roman(n)` `unroman(rn)` | Friendly formatting.   |
+| `random_string`, `random_token`, `random_password`                                                                                                                                                        | Secure random text.    |
+| `colorize(text, "red")`, `progress_bar(done, total)`, `table(rows)`, `print_table(rows)`                                                                                                                  | Terminal output.       |
 
 ### Math and statistics
 
