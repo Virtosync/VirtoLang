@@ -74,6 +74,7 @@ vlang hello.vlang
 | Command                          | What it does                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------------ |
 | `vlang file.vlang`               | Run a program.                                                                 |
+| `vlang file.vlang a b`           | Run a program with arguments (read with `args()` or Python's `argparse`).      |
 | `vlang`                          | Run `main.vlang` from the current folder.                                      |
 | `vlang -c file.vlang`            | Check the syntax without running the program.                                  |
 | `vlang -e "print(1 + 2)"`        | Run code given directly on the command line.                                   |
